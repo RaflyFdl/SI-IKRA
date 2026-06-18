@@ -56,6 +56,9 @@ Route::post('/login', [AuthController::class, 'processLogin']);
 Route::get('/daftar', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/daftar', [AuthController::class, 'register'])->name('register.store');
 
+// [BARU] Route untuk memproses token verifikasi saat link di email diklik user
+Route::get('/register/verify/{token}', [AuthController::class, 'verifyEmail'])->name('register.verify');
+
 
 // ==========================================
 // 2. JALUR KHUSUS ANGGOTA (Bypass Temp demi Demo - DIKEMBALIKAN KE ASLINYA)
@@ -94,6 +97,23 @@ Route::get('/keuangan/dashboard', [TransactionController::class, 'keuanganDashbo
 
 // Halaman Khusus Laporan Penerimaan Infak Ekstra (Sisi Keuangan)
 Route::get('/keuangan/infak-ekstra', [TransactionController::class, 'infakEkstraDashboard'])->name('keuangan.infak-ekstra');
+
+// [BARU] Halaman Khusus Log Alokasi Dana Operasional Gabungan (35% Reguler + 35% Ekstra)
+Route::get('/keuangan/operasional', [TransactionController::class, 'operasionalDashboard'])->name('keuangan.operasional');
+
+
+// ==========================================
+// 4.5 JALUR KHUSUS OPERASIONAL (OPERATIONAL STAFF)
+// ==========================================
+// Halaman utama dashboard operasional dipindah ke AuthController agar pengecekan session staff valid
+Route::get('/operasional/dashboard', [AuthController::class, 'operationalDashboard'])->name('operational.dashboard');
+
+// Halaman pusat jadwal kerja & pengaturan tanggal eksekusi (3 Tab Kategori)
+Route::get('/operasional/jadwal', [ProgramController::class, 'operationalSchedule'])->name('operational.schedule');
+Route::post('/operasional/program/{id}/update-date', [ProgramController::class, 'updateExecutionDate'])->name('operational.update-date');
+
+// Aksi operasional untuk mengunggah bukti dokumentasi lapangan & menyelesaikan program
+Route::post('/operasional/program/{id}/complete', [ProgramController::class, 'completeProgram'])->name('operational.complete');
 
 
 // ==========================================

@@ -32,6 +32,9 @@
             <a href="#" class="py-3 px-6 font-bold text-sm text-[#0b6e3f] border-b-2 border-[#0b6e3f] transition-all">
                 🌟 Infak Ekstra (Khusus Program)
             </a>
+            <a href="{{ route('keuangan.operasional') }}" class="py-3 px-6 font-semibold text-sm text-gray-400 hover:text-gray-700 transition-all">
+                💼 Dana Operasional Kantor
+            </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -60,14 +63,58 @@
             </div>
         </div>
 
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80 space-y-4">
+            <div>
+                <h2 class="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <span>🌟</span> Logika Alokasi Aturan Dana IKRA (Khusus Infak Ekstra)
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">Pemisahan otomatis berdasarkan persentase 35% kebutuhan operasional internal yayasan dan 65% akumulasi dana siap salur khusus program ekstra.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wide block">Alokasi Operasional Kantor (35%)</span>
+                        <h4 class="text-xl font-bold text-slate-700 mt-1">
+                            Rp {{ number_format($operasionalEkstra, 0, ',', '.') }}
+                        </h4>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-3 border-t border-slate-200/60 pt-2">
+                        *Dipotong otomatis dari akumulasi dana ekstra masuk untuk menunjang operasional kesekretariatan yayasan.
+                    </p>
+                </div>
+
+                <div class="bg-amber-50/60 border border-amber-100 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-amber-800 tracking-wide block">Dana Siap Salur Program Ekstra (65%)</span>
+                        <h4 class="text-xl font-bold text-amber-700 mt-1">
+                            Rp {{ number_format($siapSalurEkstra, 0, ',', '.') }}
+                        </h4>
+                    </div>
+                    <p class="text-[11px] text-amber-600/70 mt-3 border-t border-amber-100 pt-2">
+                        *Dana murni pasca potongan yang sah dan siap dicairkan untuk kebutuhan eksekusi program-program kerja ekstra.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
             <div class="p-5 border-b border-gray-100 bg-slate-50/50">
                 <h2 class="font-bold text-gray-900 text-base tracking-tight">Status Capaian Dana Kelompok Program</h2>
-                <p class="text-xs text-gray-500 mt-0.5">Akumulasi persentase kas terkumpul dibandingkan dengan target batas penggalangan dana.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Akumulasi persentase kas terkumpul dibandingkan dengan target batas penggalangan dana beserta rincian alokasi fungsionalnya.</p>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 @forelse($daftarProgram as $prog)
-                    <div class="p-4 rounded-xl border border-gray-100 bg-slate-50/30 space-y-3 shadow-inner">
+                    @php 
+                        // Perhitungan presentase batas target program
+                        $persen = $prog->target_amount > 0 ? ($prog->current_amount / $prog->target_amount) * 100 : 0;
+                        $persen = $persen > 100 ? 100 : $persen;
+
+                        // Perhitungan porsi alokasi dana per program kerja secara internal
+                        $danaTerikat = $prog->current_amount * 0.35;
+                        $danaSiapSalur = $prog->current_amount * 0.65;
+                    @endphp
+                    <div class="p-4 rounded-xl border border-gray-100 bg-slate-50/30 space-y-4 shadow-inner">
                         <div class="flex justify-between items-start gap-2">
                             <h4 class="font-bold text-gray-800 text-sm leading-tight">
                                 {{ $prog->name ?? ($prog->title ?? 'Program Infak Ekstra') }}
@@ -76,22 +123,36 @@
                                 {{ $prog->category ?? 'Ekstra' }}
                             </span>
                         </div>
-                        <div class="flex justify-between text-xs font-medium text-slate-500">
+
+                        <div class="flex justify-between text-xs font-medium text-slate-500 border-b border-gray-100 pb-2">
                             <span>Terkumpul: <b class="text-gray-700">Rp {{ number_format($prog->current_amount, 0, ',', '.') }}</b></span>
                             <span>Target: Rp {{ number_format($prog->target_amount, 0, ',', '.') }}</span>
                         </div>
                         
-                        <div class="w-full bg-slate-100 rounded-full h-2">
-                            @php 
-                                $persen = $prog->target_amount > 0 ? ($prog->current_amount / $prog->target_amount) * 100 : 0;
-                                $persen = $persen > 100 ? 100 : $persen;
-                            @endphp
-                            <div class="bg-[#0b6e3f] h-2 rounded-full transition-all duration-500" style="width: {{ $persen }}%"></div>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-white border border-gray-200/70 p-2.5 rounded-lg">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Dana Operasional (35%)</span>
+                                <span class="font-bold text-gray-600 block mt-0.5">
+                                    Rp {{ number_format($danaTerikat, 0, ',', '.') }}
+                                </span>
+                            </div>
+                            <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-lg">
+                                <span class="text-[10px] uppercase font-bold text-emerald-600 block tracking-wider">Dana Terikat (65%)</span>
+                                <span class="font-extrabold text-[#0b6e3f] block mt-0.5">
+                                    Rp {{ number_format($danaSiapSalur, 0, ',', '.') }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                                {{ round($persen, 1) }}% Tercapai
-                            </span>
+
+                        <div class="space-y-1.5 pt-1">
+                            <div class="w-full bg-slate-100 rounded-full h-2">
+                                <div class="bg-[#0b6e3f] h-2 rounded-full transition-all duration-500" style="width: {{ $persen }}%"></div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                                    {{ round($persen, 1) }}% Tercapai
+                                </span>
+                            </div>
                         </div>
                     </div>
                 @empty

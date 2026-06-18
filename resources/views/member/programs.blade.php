@@ -18,50 +18,91 @@
                 // Hitung persentase pemenuhan dana program (maksimal 100%) - LOGIC ASLI
                 $percentage = $program->target_amount > 0 ? min(round(($program->current_amount / $program->target_amount) * 100), 100) : 0;
                 
-                // Hitung sisa hari pengerjaan program menggunakan Carbon - LOGIC ASLI
-                $endDate = \Carbon\Carbon::parse($program->end_date);
-                $daysLeft = \Carbon\Carbon::now()->diffInDays($endDate, false);
+                // Perbaikan Deteksi Batas Waktu menggunakan Carbon (Mencegah salah hitung pada Program Terbuka)
+                $daysLeft = null;
+                if ($program->end_date) {
+                    $endDate = \Carbon\Carbon::parse($program->end_date);
+                    $daysLeft = \Carbon\Carbon::now()->diffInDays($endDate, false);
+                }
             @endphp
             
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all duration-300">
                 
-                <div class="p-5 space-y-4">
-                    <div class="flex justify-between items-center text-[11px] font-bold">
-                        @if($daysLeft > 0)
-                            <span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-200/60 uppercase tracking-wider">
-                                ⏳ {{ $daysLeft }} Hari Lagi
-                            </span>
+                <div>
+                    <div class="w-full h-44 bg-slate-100 relative overflow-hidden border-b border-slate-100 flex items-center justify-center">
+                        @if($program->image_path)
+                            <img src="{{ asset('storage/' . $program->image_path) }}" 
+                                 alt="{{ $program->name }}" 
+                                 class="w-full h-full object-cover block"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/600x400/f1f5f9/047857?text=Foto+Program';">
                         @else
-                            <span class="bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-200/60 uppercase tracking-wider">
-                                Hari Ini Batas Akhir
-                            </span>
+                            <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-slate-50 text-emerald-700 p-4 text-center">
+                                <span class="text-4xl mb-1">🎁</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ $program->category ?? 'Donasi Umum' }}</span>
+                            </div>
                         @endif
-                        
-                        <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200/60">
-                            {{ $percentage }}% Terpenuhi
+
+                        <span class="absolute top-3 left-3 text-[9px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide shadow-sm {{ $program->category == 'Podcast' ? 'bg-blue-600 text-white' : ($program->category == 'Cinema Edukasi' ? 'bg-purple-600 text-white' : 'bg-emerald-600 text-white') }}">
+                            {{ $program->category ?? 'Donasi Umum' }}
                         </span>
                     </div>
 
-                    <div class="space-y-1">
-                        <h3 class="font-bold text-slate-800 text-base leading-snug hover:text-indigo-600 transition duration-200 line-clamp-2 min-h-[3rem]">{{ $program->name }}</h3>
-                        <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed">
-                            {{ $program->description }}
-                        </p>
-                    </div>
-
-                    <div class="space-y-2 pt-2">
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center text-xs pt-1">
+                    <div class="p-5 space-y-4">
+                        <div class="flex justify-between items-center text-[11px] font-bold">
                             <div>
-                                <span class="text-slate-400 block text-[10px] uppercase font-medium">Terkumpul</span>
-                                <strong class="text-slate-700 font-bold">Rp {{ number_format($program->current_amount, 0, ',', '.') }}</strong>
+                                @if($program->end_date)
+                                    @if($daysLeft > 0)
+                                        <span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-200/60 uppercase tracking-wider">
+                                            ⏳ {{ ceil($daysLeft) }} Hari Lagi
+                                        </span>
+                                    @else
+                                        <span class="bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-200/60 uppercase tracking-wider">
+                                            Hari Ini Batas Akhir
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200/60 uppercase tracking-wider inline-flex items-center gap-1">
+                                        ♾️ Terbuka Terus
+                                    </span>
+                                @endif
                             </div>
-                            <div class="text-right">
-                                <span class="text-slate-400 block text-[10px] uppercase font-medium">Target Dana</span>
-                                <strong class="text-slate-500 font-semibold">Rp {{ number_format($program->target_amount, 0, ',', '.') }}</strong>
+                            
+                            <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200/60">
+                                {{ $percentage }}% Terpenuhi
+                            </span>
+                        </div>
+
+                        <div class="space-y-1">
+                            <h3 class="font-bold text-slate-800 text-base leading-snug hover:text-indigo-600 transition duration-200 line-clamp-2 min-h-[3rem]">{{ $program->name }}</h3>
+                            <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                                {{ $program->description }}
+                            </p>
+                        </div>
+
+                        @if($program->execution_date)
+                            <div class="p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-xl flex items-center gap-2">
+                                <span class="text-sm">📅</span>
+                                <div class="text-[11px]">
+                                    <span class="text-slate-400 block font-medium uppercase tracking-wider text-[9px]">Tanggal Pelaksanaan</span>
+                                    <span class="text-emerald-800 font-bold">{{ \Carbon\Carbon::parse($program->execution_date)->translatedFormat('d F Y') }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="space-y-2 pt-2">
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center text-xs pt-1">
+                                <div>
+                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">Terkumpul</span>
+                                    <strong class="text-slate-700 font-bold">Rp {{ number_format($program->current_amount, 0, ',', '.') }}</strong>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">Target Dana</span>
+                                    <strong class="text-slate-500 font-semibold">Rp {{ number_format($program->target_amount, 0, ',', '.') }}</strong>
+                                </div>
                             </div>
                         </div>
                     </div>

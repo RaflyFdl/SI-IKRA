@@ -12,7 +12,7 @@ class Member extends Model
     // Menentukan nama tabel secara manual karena kita pakai nama 'members'
     protected $table = 'members';
 
-    // Kolom apa saja yang boleh diisi oleh sistem saat form disubmit
+    // Kolom apa saja yang boleh diisi oleh sistem saat form disubmit (Mass Assignment)
     protected $fillable = [
         'nama',
         'angkatan',
@@ -21,7 +21,9 @@ class Member extends Model
         'password',
         'bukti_pendukung',
         'status',
-        'va_muamalat'
+        'va_muamalat',
+        'verification_token', // [BARU] Mengizinkan pengisian token verifikasi email
+        'email_verified_at'   // [BARU] Mengizinkan pengisian tanggal verifikasi email
     ];
 
     // Menyembunyikan password saat data dipanggil demi keamanan

@@ -25,12 +25,16 @@
 
     <main class="max-w-7xl mx-auto px-6 py-10 space-y-8">
         
+        <!-- NAVIGASI TAB MENU 3 PILIHAN SINKRON -->
         <div class="flex border-b border-gray-200">
             <a href="#" class="py-3 px-6 font-bold text-sm text-[#0b6e3f] border-b-2 border-[#0b6e3f] transition-all">
                 💳 Infak Reguler (Bulanan)
             </a>
             <a href="{{ route('keuangan.infak-ekstra') }}" class="py-3 px-6 font-semibold text-sm text-gray-400 hover:text-gray-700 transition-all">
                 🌟 Infak Ekstra (Khusus Program)
+            </a>
+            <a href="{{ route('keuangan.operasional') }}" class="py-3 px-6 font-semibold text-sm text-gray-400 hover:text-gray-700 transition-all">
+                💼 Dana Operasional Kantor
             </a>
         </div>
         
@@ -72,6 +76,52 @@
                     <span class="text-[11px] text-slate-500 font-medium block mt-1">
                         Periode aktif terpilih: <strong class="text-gray-800">{{ $periodeDipilih }}</strong>
                     </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80 space-y-4">
+            <div>
+                <h2 class="text-base font-bold text-gray-990 tracking-tight flex items-center gap-2">
+                    <span>🏢</span> Logika Alokasi Aturan Dana IKRA (Khusus Infak Reguler)
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">Pemisahan otomatis berdasarkan persentase 35% kebutuhan operasional internal kantor dan 65% dana siap salur program reguler.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wide block">Alokasi Operasional Kantor (35%)</span>
+                        <h4 class="text-xl font-bold text-slate-700 mt-1">
+                            Rp {{ number_format($operasionalReguler, 0, ',', '.') }}
+                        </h4>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-3 border-t border-slate-200/60 pt-2">
+                        *Diambil dari total kumulatif dana masuk reguler untuk kebutuhan operasional kesekretariatan.
+                    </p>
+                </div>
+
+                <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-[#0b6e3f] tracking-wide block">Dana Siap Salur Program Reguler (65%)</span>
+                        <h4 class="text-xl font-bold text-[#0b6e3f] mt-1">
+                            Rp {{ number_format($siapSalurReguler, 0, ',', '.') }}
+                        </h4>
+                    </div>
+                    <p class="text-[11px] text-emerald-600/70 mt-3 border-t border-emerald-100 pt-2">
+                        *Maksimal dana murni yang sah dan siap dicairkan oleh tim operasional untuk program kerja reguler.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50/30 border border-blue-100 p-4 rounded-xl text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <span>📌 Breakdown Pembagian Khusus Periode <strong class="text-slate-800">{{ $periodeDipilih }}</strong>:</span>
+                </div>
+                <div class="flex flex-wrap gap-4 font-medium">
+                    <div>Operasional (35%): <strong class="text-slate-800">Rp {{ number_format($operasionalPerPeriode, 0, ',', '.') }}</strong></div>
+                    <div class="hidden sm:block text-slate-300">|</div>
+                    <div>Siap Salur (65%): <strong class="text-emerald-700">Rp {{ number_format($siapSalurPerPeriode, 0, ',', '.') }}</strong></div>
                 </div>
             </div>
         </div>

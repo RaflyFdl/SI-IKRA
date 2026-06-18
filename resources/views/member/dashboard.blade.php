@@ -47,7 +47,7 @@
         <div class="lg:col-span-7 bg-white border border-gray-200 p-6 rounded-2xl flex flex-col justify-between gap-4">
             <div class="space-y-1">
                 <h3 class="font-bold text-gray-900 text-base">Alokasi Distribusi Manfaat</h3>
-                <p class="text-xs text-gray-500">Sesuai amanah ketetapan Yayasan Wakaf IKRA Padjadjaran, infak bulanan reguler disalurkan ke dalam dua pos utama:</p>
+                <p class="text-xs text-gray-500">Sesuai amanah ketetapan Yayasan Wakaf IKRA Padjadjaran, infak akan dialokasikan ke dalam dua pos utama:</p>
             </div>
 
             <div class="space-y-3">
@@ -72,7 +72,7 @@
             </div>
             
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs font-medium text-slate-500">
-                💡 Pengingat otomatis dikirim melalui WhatsApp setiap tanggal <span class="font-bold text-slate-700">25</span>.
+                💡 Pengingat otomatis dikirim melalui Email setiap awal bulan 
             </div>
         </div>
 
@@ -82,7 +82,6 @@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-gray-100 bg-slate-50/50">
             <h2 class="font-bold text-gray-900 text-base">Riwayat Rekapitulasi Infak Bulanan Anda</h2>
-            <p class="text-xs text-gray-500 mt-0.5">Daftar mutasi pengiriman dana infak rutin bulanan yang tervalidasi sukses oleh sistem.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">

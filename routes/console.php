@@ -22,7 +22,7 @@ Artisan::command('inspire', function () {
 
 /**
  * LOGIKA AUTOMATION SKRIPSI: Task Scheduler Pengingat Infak Reguler
- * Mengatur agar perintah 'infak:reminder' berjalan otomatis tanpa intervensi manusia
+ * Mengatur agar perintah 'infak:send-reminder' berjalan otomatis tanpa intervensi manusia
  * Dieksekusi setiap tanggal 1 awal bulan pada pukul 05:00 subuh.
  */
-Schedule::command('infak:reminder')->monthlyOn(1, '05:00');
+Schedule::command('infak:send-reminder')->monthlyOn(1, '05:00');

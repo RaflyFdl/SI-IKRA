@@ -110,29 +110,50 @@ class TransactionController extends Controller
     }
 
     /**
-     * 2. Menampilkan Halaman Dashboard Utama Bagian Keuangan (KHUSUS REGULER)
+     * 2. Menampilkan Halaman Dashboard Utama Bagian Keuangan (LOGIKA PEMBAGIAN DANA 35% & 65%)
      */
     public function keuanganDashboard(Request $request)
     {
-        // A. KALKULASI UTAMA (Hanya mengambil data reguler)
+        // -------------------------------------------------------------------
+        // [BARU] AMBIL DATA TOTAL AGREGAT UNTUK DIBAGI SESUAI ATURAN IKRA
+        // -------------------------------------------------------------------
+        // Ambil total kotor keseluruhan infak reguler
         $totalKeseluruhan = DB::table('transactions')
                             ->where('transaction_type', 'reguler')
                             ->sum('amount') ?? 0;
 
+        // Ambil total kotor keseluruhan infak ekstra
         $totalEkstra = DB::table('transactions')
                             ->where('transaction_type', 'ekstra')
                             ->sum('amount') ?? 0;
 
-        // B. PROSES FILTER PERIODE (BULANAN)
+        // Terapkan Rumus Matematika 35% dan 65% untuk masing-masing jenis infak
+        $operasionalReguler = $totalKeseluruhan * 0.35;
+        $siapSalurReguler   = $totalKeseluruhan * 0.65;
+
+        $operasionalEkstra  = $totalEkstra * 0.35;
+        $siapSalurEkstra    = $totalEkstra * 0.65;
+
+        // Akumulasi Kas Operasional Kantor Gabungan (35% Reguler + 35% Ekstra)
+        $totalKasOperasionalKantor = $operasionalReguler + $operasionalEkstra;
+
+        // -------------------------------------------------------------------
+        // B. PROSES FILTER PERIODE BULANAN (BAWAKAN ASLI KODEMU)
+        // -------------------------------------------------------------------
         $periodeDipilih = $request->get('periode', date('Y-m'));
 
+        // Total reguler per bulan terpilih
         $totalPerPeriode = DB::table('transactions')
                             ->where('transaction_type', 'reguler')
                             ->where('periode', $periodeDipilih)
                             ->sum('amount') ?? 0;
 
+        // Rumus 35% & 65% khusus untuk data bulanan yang sedang difilter (opsional untuk visual blade nanti)
+        $operasionalPerPeriode = $totalPerPeriode * 0.35;
+        $siapSalurPerPeriode   = $totalPerPeriode * 0.65;
+
         $daftarPeriode = DB::table('transactions')
-                            ->where('transaction_type', 'reguler') // Dibatasi ke reguler agar sinkron
+                            ->where('transaction_type', 'reguler') 
                             ->whereNotNull('periode')
                             ->distinct()
                             ->pluck('periode')
@@ -142,7 +163,7 @@ class TransactionController extends Controller
             $daftarPeriode = [date('Y-m')];
         }
 
-        // C. AMBIL RIWAYAT TRANSAKSI KHUSUS REGULER (Membatasi data agar halaman utama fokus pada bulanan)
+        // C. AMBIL RIWAYAT TRANSAKSI KHUSUS REGULER
         $transactions = Transaction::where('transaction_type', 'reguler')
                                     ->orderBy('created_at', 'desc')
                                     ->limit(10)
@@ -150,6 +171,7 @@ class TransactionController extends Controller
         
         $riwayatTransaksi = $transactions;
 
+        // Kirim semua variabel lama + variabel pembagian dana baru ke view keuangan_dashboard
         return view('keuangan_dashboard', compact(
             'totalKeseluruhan', 
             'totalEkstra', 
@@ -157,7 +179,14 @@ class TransactionController extends Controller
             'transactions',
             'periodeDipilih',
             'totalPerPeriode',
-            'daftarPeriode'
+            'daftarPeriode',
+            'operasionalReguler',
+            'siapSalurReguler',
+            'operasionalEkstra',
+            'siapSalurEkstra',
+            'totalKasOperasionalKantor',
+            'operasionalPerPeriode',
+            'siapSalurPerPeriode'
         ));
     }
 
@@ -166,7 +195,6 @@ class TransactionController extends Controller
      */
     public function infakEkstraDashboard()
     {
-        // Mempertahankan variabel bawaan blade
         $payments = Transaction::where('transaction_type', 'ekstra')->latest()->get();
         $transactions = $payments;
 
@@ -178,7 +206,46 @@ class TransactionController extends Controller
         // Mengambil data performa target program dari extra_programs
         $daftarProgram = DB::table('extra_programs')->get();
 
+        // Tambahan pembagian di halaman ekstra agar sinkron jika sewaktu-waktu dipanggil di blade ekstra
+        $operasionalEkstra = $totalEkstra * 0.35;
+        $siapSalurEkstra   = $totalEkstra * 0.65;
+
         // FIX JALUR: Mengarah ke folder 'keuangan' dan file 'keuangan_infak_ekstra'
-        return view('keuangan.keuangan_infak_ekstra', compact('payments', 'transactions', 'totalEkstra', 'daftarProgram'));
+        return view('keuangan.keuangan_infak_ekstra', compact(
+            'payments', 
+            'transactions', 
+            'totalEkstra', 
+            'daftarProgram',
+            'operasionalEkstra',
+            'siapSalurEkstra'
+        ));
+    }
+
+    /**
+     * 4. Menampilkan Halaman Khusus Log Dana Operasional Gabungan (35% Reguler + 35% Ekstra)
+     */
+    public function operasionalDashboard()
+    {
+        // Ambil total kotor keseluruhan infak reguler dari database untuk dipotong 35%
+        $totalReguler = DB::table('transactions')
+                            ->where('transaction_type', 'reguler')
+                            ->sum('amount') ?? 0;
+        $operasionalReguler = $totalReguler * 0.35;
+
+        // Ambil total kotor keseluruhan infak ekstra dari database untuk dipotong 35%
+        $totalEkstra = DB::table('transactions')
+                            ->where('transaction_type', 'ekstra')
+                            ->sum('amount') ?? 0;
+        $operasionalEkstra = $totalEkstra * 0.35;
+
+        // Akumulasi Penggabungan Tunggal (Single Pool) Dana Operasional Yayasan
+        $totalOperasionalGabungan = $operasionalReguler + $operasionalEkstra;
+
+        // Mengarah ke file view keuangan_operasional di dalam folder keuangan
+        return view('keuangan.keuangan_operasional', compact(
+            'operasionalReguler',
+            'operasionalEkstra',
+            'totalOperasionalGabungan'
+        ));
     }
 }
