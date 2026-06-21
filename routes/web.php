@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\MemberDashboardController; // Tetap di-import untuk tab profil
+use App\Http\Controllers\PaymentSimulationController; // Controller simulasi pembayaran
+use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -19,12 +21,12 @@ use App\Models\User;
 // ==========================================
 Route::get('/', function () {
     // 1. Menghitung data asli untuk Stats Bar di Home Page
-    $anggotaAktif = DB::table('members')->count() ?? 0; 
-    
+    $anggotaAktif = DB::table('members')->count() ?? 0;
+
     // Menghitung total dana dari semua transaksi (Reguler + Ekstra)
-    $totalDanaTerkumpul = DB::table('transactions')->sum('amount') ?? 0; 
-    
-    // Mengubah format uang jeti agar ringkas (Misal: 6.2Jt) seperti di gambar
+    $totalDanaTerkumpul = DB::table('transactions')->sum('amount') ?? 0;
+
+    // Mengubah format uang jeti agar ringkas (Misal: 6.2Jt)
     if ($totalDanaTerkumpul >= 1000000) {
         $totalDanaFormat = round($totalDanaTerkumpul / 1000000, 1) . 'Jt';
     } else {
@@ -33,17 +35,16 @@ Route::get('/', function () {
 
     // Menghitung berapa banyak program infak ekstra yang terdaftar
     $programAktif = DB::table('extra_programs')->count();
-    $programTersalurkan = 3; // Sementara di-hardcode sesuai indikator awal gambar
+    $programTersalurkan = 3;
 
-    // 2. Mengambil data program ekstra untuk ditampilkan di bagian bawah
+    // Mengambil data program ekstra
     $daftarProgramEkstra = DB::table('extra_programs')->get();
 
-    // 3. Mengirimkan data asli ini ke dalam file welcome.blade.php
     return view('welcome', compact(
-        'anggotaAktif', 
-        'programAktif', 
-        'totalDanaFormat', 
-        'programTersalurkan', 
+        'anggotaAktif',
+        'programAktif',
+        'totalDanaFormat',
+        'programTersalurkan',
         'daftarProgramEkstra'
     ));
 });
@@ -56,68 +57,78 @@ Route::post('/login', [AuthController::class, 'processLogin']);
 Route::get('/daftar', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/daftar', [AuthController::class, 'register'])->name('register.store');
 
-// [BARU] Route untuk memproses token verifikasi saat link di email diklik user
+// Route verifikasi email
 Route::get('/register/verify/{token}', [AuthController::class, 'verifyEmail'])->name('register.verify');
 
 
 // ==========================================
-// 2. JALUR KHUSUS ANGGOTA (Bypass Temp demi Demo - DIKEMBALIKAN KE ASLINYA)
+// 2. JALUR KHUSUS ANGGOTA
 // ==========================================
-// Kunci utama: Menghubungkan halaman utama anggota KEMBALI ke AuthController persis seperti kode awalmu agar bisa login
 Route::get('/dashboard', [AuthController::class, 'memberDashboard'])->name('member.dashboard');
 Route::get('/dashboard/infak-ekstra', [ProgramController::class, 'memberIndex'])->name('member.programs.index');
 
-// HALAMAN BARU: Menggunakan fungsi profil namun tanpa kurungan middleware ketat demi demo kelancaran login
+// 🚀 ROUTE BARU: ALUR INFAK EKSTRA ALA KITABISA
+Route::get('/infak-ekstra/{id}', [ExtraProgramController::class, 'show'])->name('member.extra.show');
+Route::post('/infak-ekstra/{id}/checkout', [ExtraProgramController::class, 'checkout'])->name('member.extra.checkout');
+Route::get('/infak-ekstra/invoice/{transaction_id}', [ExtraProgramController::class, 'invoice'])->name('member.extra.invoice');
+Route::post('/infak-ekstra/simulasikan/{transaction_id}', [ExtraProgramController::class, 'simulatePayment'])->name('member.extra.simulate');
+
 Route::get('/dashboard/profil', [MemberDashboardController::class, 'profil'])->name('member.profil');
 
-// PROSES LOGOUT: Diubah mengarah ke Homepage ('/') setelah berhasil hapus sesi
-Route::post('/logout', function() {
+// Logout
+Route::post('/logout', function () {
     \Illuminate\Support\Facades\Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/'); // <- Mengarah ke landing page utama sistem infak
+
+    return redirect('/');
 })->name('logout');
 
 
 // ==========================================
-// 3. JALUR KHUSUS ADMINISTRATOR (ADMIN)
+// 3. JALUR KHUSUS ADMIN
 // ==========================================
 Route::get('/admin', [AuthController::class, 'adminDashboard'])->name('admin.dashboard');
+
 Route::post('/admin/approve/{id}', [AuthController::class, 'approveMember'])->name('admin.approve');
 
-// Kelola Program Infak Ekstra (Sisi Admin)
+Route::post('/admin/reject/{id}', [AuthController::class, 'rejectMember'])->name('admin.member.reject');
+
+// Kelola Program
 Route::get('/admin/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
 Route::post('/admin/programs', [ProgramController::class, 'store'])->name('admin.programs.store');
 
 
 // ==========================================
-// 4. JALUR KHUSUS KEUANGAN (FINANCE)
+// 4. JALUR KHUSUS KEUANGAN
 // ==========================================
 Route::get('/keuangan/dashboard', [TransactionController::class, 'keuanganDashboard'])->name('keuangan.dashboard');
 
-// Halaman Khusus Laporan Penerimaan Infak Ekstra (Sisi Keuangan)
 Route::get('/keuangan/infak-ekstra', [TransactionController::class, 'infakEkstraDashboard'])->name('keuangan.infak-ekstra');
 
-// [BARU] Halaman Khusus Log Alokasi Dana Operasional Gabungan (35% Reguler + 35% Ekstra)
 Route::get('/keuangan/operasional', [TransactionController::class, 'operasionalDashboard'])->name('keuangan.operasional');
 
 
 // ==========================================
-// 4.5 JALUR KHUSUS OPERASIONAL (OPERATIONAL STAFF)
+// 4.5 JALUR KHUSUS OPERASIONAL
 // ==========================================
-// Halaman utama dashboard operasional dipindah ke AuthController agar pengecekan session staff valid
 Route::get('/operasional/dashboard', [AuthController::class, 'operationalDashboard'])->name('operational.dashboard');
 
-// Halaman pusat jadwal kerja & pengaturan tanggal eksekusi (3 Tab Kategori)
 Route::get('/operasional/jadwal', [ProgramController::class, 'operationalSchedule'])->name('operational.schedule');
+
 Route::post('/operasional/program/{id}/update-date', [ProgramController::class, 'updateExecutionDate'])->name('operational.update-date');
 
-// Aksi operasional untuk mengunggah bukti dokumentasi lapangan & menyelesaikan program
 Route::post('/operasional/program/{id}/complete', [ProgramController::class, 'completeProgram'])->name('operational.complete');
 
 
 // ==========================================
-// 5. WEBHOOK GATEWAY (XENDIT EXTERNAL API)
+// 5. WEBHOOK GATEWAY XENDIT
 // ==========================================
-// Webhook tunggal dinamis (Bisa memproses Infak Reguler & Ekstra sekaligus secara otomatis)
 Route::post('/webhook/xendit', [TransactionController::class, 'handleCallback']);
+
+
+// ==========================================
+// 6. SIMULASI PEMBAYARAN (KHUSUS TEST MODE)
+// ==========================================
+Route::post('/simulate-payment/{memberId}', [PaymentSimulationController::class, 'simulateRegularPayment'])
+    ->name('simulation.regular');

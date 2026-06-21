@@ -83,11 +83,42 @@
                             </td>
                             <td class="text-center">
                                 @if($m->status == 'pending')
-                                    <form action="{{ route('admin.approve', $m->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-success px-3">Setujui & Buat VA</button>
-                                    </form>
-                                @else
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <form action="{{ route('admin.approve', $m->id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-success px-2">Setujui & Buat VA</button>
+                                        </form>
+                                        
+                                        <button type="button" class="btn btn-sm btn-danger px-2" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $m->id }}">
+                                            Tolak
+                                        </button>
+                                    </div>
+
+                                    <div class="modal fade text-start" id="rejectModal{{ $m->id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ $m->id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title" id="rejectModalLabel{{ $m->id }}">Tolak Pendaftaran: {{ $m->nama }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ route('admin.member.reject', $m->id) }}" method="POST">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="alasan{{ $m->id }}" class="form-label fw-semibold">Alasan Penolakan Berkas/Akun:</label>
+                                                            <textarea class="form-label form-control" id="alasan{{ $m->id }}" name="alasan" rows="4" placeholder="Contoh: Bukti identitas KTM buram, mohon upload ulang foto ijazah asli yang terbaca jelas." required></textarea>
+                                                            <div class="form-text text-muted">Alasan ini akan otomatis terkirim ke alamat email pendaftar.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-danger">Kirim Email & Tolak</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @else
                                     <button class="btn btn-sm btn-light text-muted" disabled>Selesai</button>
                                 @endif
                             </td>

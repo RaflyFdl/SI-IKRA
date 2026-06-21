@@ -5,24 +5,34 @@
 @section('member_content')
 <div class="space-y-6">
 
-    <!-- 1. BADGE STATUS BULAN INI -->
-    <div class="p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-emerald-50/60 border-emerald-200">
-        <div class="space-y-1">
-            <h2 class="text-xl font-bold text-emerald-900">Selamat Datang, {{ $member->nama }}!</h2>
-            <p class="text-xs text-emerald-700">Periode Bulan Berjalan: <span class="font-bold uppercase">{{ date('F Y') }}</span></p>
+    @if($sudahBayarBulanIni)
+        <div class="p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-emerald-50/60 border-emerald-200">
+            <div class="space-y-1">
+                <h2 class="text-xl font-bold text-emerald-900">Selamat Datang, {{ $member->nama }}!</h2>
+                <p class="text-xs text-emerald-700">Periode Bulan Berjalan: <span class="font-bold uppercase">{{ date('F Y') }}</span></p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="bg-emerald-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-xs uppercase tracking-wider">
+                    ● Sudah Infak
+                </span>
+            </div>
         </div>
-        <!-- Status Badge Sesuai Database -->
-        <div class="flex items-center space-x-2">
-            <span class="bg-emerald-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-xs uppercase tracking-wider">
-                ● {{ $member->status }}
-            </span>
+    @else
+        <div class="p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-rose-50/60 border-rose-200">
+            <div class="space-y-1">
+                <h2 class="text-xl font-bold text-rose-900">Selamat Datang, {{ $member->nama }}!</h2>
+                <p class="text-xs text-rose-700">Periode Bulan Berjalan: <span class="font-bold uppercase">{{ date('F Y') }}</span></p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="bg-rose-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-xs uppercase tracking-wider animate-pulse">
+                    ● Belum Infak
+                </span>
+            </div>
         </div>
-    </div>
+    @endif
 
-    <!-- 2. DETAIL UTILITY: AKUN VA & INDIKATOR ALOKASI -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- KARTU VIRTUAL ACCOUNT (Mengambil gaya hijau estetik dari database dinamis) -->
         <div class="lg:col-span-5 bg-gradient-to-br from-[#0b6e3f] to-[#074729] text-white p-6 rounded-2xl shadow-sm space-y-6 flex flex-col justify-between">
             <div class="space-y-2">
                 <span class="bg-white/20 text-emerald-100 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wide border border-white/10">
@@ -32,7 +42,6 @@
                 <p class="text-xs text-emerald-200/80 leading-relaxed">Gunakan nomor VA tetap ini untuk penyaluran otomatis komitmen infak bulanan reguler Anda.</p>
             </div>
 
-            <!-- Angka Rekening VA Berdasarkan Kepemilikan Anggota Login -->
             <div class="bg-black/20 backdrop-blur-xs p-4 rounded-xl border border-white/10 flex items-center justify-between">
                 <span class="font-mono text-xl md:text-2xl font-bold tracking-widest text-emerald-300">{{ $member->va_muamalat }}</span>
                 <button onclick="navigator.clipboard.writeText('{{ $member->va_muamalat }}'); alert('Nomor VA berhasil disalin!')" class="text-xs bg-white text-[#0b6e3f] px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-slate-100 active:scale-95 transition-all">
@@ -41,9 +50,37 @@
             </div>
 
             <p class="text-[11px] text-emerald-200/70 italic">*Sistem otomatis mencatat transaksi atas nama Anda secara real-time.</p>
+            @if(!$sudahBayarBulanIni)
+                <div class="mt-4 border-t border-white/20 pt-4">
+                    <form action="{{ route('simulation.regular', $member->id) }}" method="POST">
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="w-full bg-white text-[#0b6e3f] font-bold py-3 rounded-xl hover:bg-gray-100 transition">
+                            💳 Simulasi Pembayaran (Sandbox)
+                        </button>
+                    </form>
+                                <p class="text-[10px] text-emerald-100 mt-2 text-center">
+                        Tombol ini hanya tersedia pada mode Sandbox untuk simulasi pembayaran.
+                    </p>
+                </div>
+                @else
+                    <div class="mt-4 border-t border-white/20 pt-4">
+                        <div class="bg-emerald-500/20 border border-emerald-300 rounded-xl p-3 text-center">
+                            <div class="text-lg">✅</div>
+                            <div class="text-sm font-bold text-white">
+                                Pembayaran Bulan Ini Berhasil
+                            </div>
+                            <div class="text-xs text-emerald-100 mt-1">
+                                Terima kasih telah menunaikan infak rutin bulan ini.
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
         </div>
 
-        <!-- KARTU INDIKATOR ALOKASI MANFAAT -->
         <div class="lg:col-span-7 bg-white border border-gray-200 p-6 rounded-2xl flex flex-col justify-between gap-4">
             <div class="space-y-1">
                 <h3 class="font-bold text-gray-900 text-base">Alokasi Distribusi Manfaat</h3>
@@ -78,7 +115,7 @@
 
     </div>
 
-    <!-- 3. TABEL RIWAYAT TRANSAKSI PERSONAL -->
+    <!-- 3. TABEL RIWAYAT TRANSAKSI PERSONAL (GABUNGAN REGULER & EKSTRA) -->
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-gray-100 bg-slate-50/50">
             <h2 class="font-bold text-gray-900 text-base">Riwayat Rekapitulasi Infak Bulanan Anda</h2>
@@ -88,31 +125,49 @@
                 <thead>
                     <tr class="bg-slate-100/70 border-b border-gray-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
                         <th class="p-4">Tanggal Pembayaran</th>
-                        <th class="p-4">ID Transaksi / VA</th>
                         <th class="p-4">Jenis Infak</th>
                         <th class="p-4">Nominal</th>
                         <th class="p-4 text-center">Status</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
-                    <tr class="hover:bg-slate-50/50 transition">
-                        <td class="p-4 text-xs text-gray-500">05 Jun 2026, 09:12 WIB</td>
-                        <td class="p-4 font-mono text-xs text-gray-400">TRX-707299-99155</td>
-                        <td class="p-4"><span class="font-semibold text-slate-800">Infak Bulanan Reguler</span></td>
-                        <td class="p-4 font-bold text-emerald-600">+ Rp 75.000</td>
-                        <td class="p-4 text-center">
-                            <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase">Berhasil</span>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-slate-50/50 transition">
-                        <td class="p-4 text-xs text-gray-500">03 Mei 2026, 14:20 WIB</td>
-                        <td class="p-4 font-mono text-xs text-gray-400">TRX-707299-81765</td>
-                        <td class="p-4"><span class="font-semibold text-slate-800">Infak Bulanan Reguler</span></td>
-                        <td class="p-4 font-bold text-emerald-600">+ Rp 75.000</td>
-                        <td class="p-4 text-center">
-                            <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase">Berhasil</span>
-                        </td>
-                    </tr>
+                    @forelse($transactions as $trx)
+                        <tr class="hover:bg-slate-50/50 transition">
+                            <td class="p-4 text-xs text-gray-500">
+                                {{ \Carbon\Carbon::parse($trx->created_at)->translatedFormat('d M Y, H:i') }} WIB
+                            </td>
+                            <!-- Kondisi Dinamis untuk Jenis Infak Reguler vs Ekstra -->
+                            <td class="p-4">
+                                <span class="font-semibold text-slate-800">
+                                    @if($trx->transaction_type === 'reguler')
+                                        Infak Bulanan Reguler
+                                    @else
+                                        Infak Ekstra / Program Khusus
+                                    @endif
+                                </span>
+                            </td>
+                            <td class="p-4 font-bold text-emerald-600">
+                                + Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                            </td>
+                            <td class="p-4 text-center">
+                                @if($trx->payment_id)
+                                    <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase">
+                                        Berhasil
+                                    </span>
+                                @else
+                                    <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase">
+                                        Pending
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="p-8 text-center text-sm text-gray-400 italic">
+                                Belum ada riwayat catatan infak yang terekam pada akun Anda.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

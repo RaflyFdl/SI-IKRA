@@ -8,7 +8,7 @@
     <div class="p-5 rounded-2xl border bg-slate-50 border-slate-200">
         <h2 class="text-xl font-bold text-slate-900">Program Infak Ekstra (Penggalangan Dana)</h2>
         <p class="text-xs text-slate-500 mt-1">
-            Salurkan donasi terbaik Anda langsung ke nomor Virtual Account khusus masing-masing program di bawah ini secara real-time.
+            Pilih program penggalangan dana di bawah ini untuk melihat informasi detail dan menyalurkan infak ekstra Anda secara real-time.
         </p>
     </div>
 
@@ -108,26 +108,10 @@
                     </div>
                 </div>
 
-                <div class="p-5 bg-slate-50/80 border-t border-gray-100 space-y-3">
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">No. VA Bank Muamalat (Anda)</span>
-                        <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
-                            <div class="overflow-hidden mr-2">
-                                <strong id="va-{{ $program->id }}" class="text-base font-mono text-indigo-600 tracking-wider block truncate">
-                                    {{ $program->dynamic_va ?? 'Belum Aktif' }}
-                                </strong>
-                            </div>
-                            
-                            @if($program->dynamic_va && $program->dynamic_va !== 'Gagal Memuat VA')
-                                <button onclick="copyToClipboard('{{ $program->dynamic_va }}', this)" class="bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 text-xs font-bold px-3 py-2 rounded-lg transition-all duration-200 focus:outline-none flex items-center gap-1 shrink-0 cursor-pointer">
-                                    <span>Salin</span>
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-                    <p class="text-[10px] text-slate-400 leading-normal italic">
-                        *Silakan transfer ke nomor VA khusus Anda di atas. Layar ATM/m-Banking otomatis memunculkan nama Anda. Transaksi akan langsung terdata otomatis di riwayat sistem.
-                    </p>
+                <div class="p-5 bg-slate-50 border-t border-gray-100">
+                    <a href="{{ route('member.extra.show', $program->id) }}" class="block text-center w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
+                        Lihat Detail & Infak Sekarang
+                    </a>
                 </div>
 
             </div>
@@ -141,23 +125,4 @@
     </div>
 
 </div>
-
-<script>
-    function copyToClipboard(text, button) {
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = button.innerHTML;
-            button.innerHTML = '<span>Tersalin!</span>';
-            button.classList.remove('bg-slate-100', 'text-slate-600');
-            button.classList.add('bg-emerald-500', 'text-white');
-            
-            setTimeout(() => {
-                button.innerHTML = originalText;
-                button.classList.remove('bg-emerald-500', 'text-white');
-                button.classList.add('bg-slate-100', 'text-slate-600');
-            }, 2000);
-        }).catch(err => {
-            console.error('Gagal menyalin teks: ', err);
-        });
-    }
-</script>
 @endsection

@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // PERBAIKAN UTUH: Melindungi rute webhook dari pemblokiran token CSRF Laravel
         $middleware->validateCsrfTokens(except: [
             'webhook/xendit',
-            'webhook/xendit/*', // Tambahkan pola bintang agar semua sub-url di bawahnya ikut lolos
+            'webhook/xendit/*', // Pola bintang agar aman jika ada sub-path
         ]);
 
     })

@@ -7,6 +7,8 @@ use App\Models\ExtraProgram;
 use App\Models\Transaction; 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail; // ✅ Impor Mail Facade untuk pengiriman email
+use App\Mail\PembayaranEkstraBerhasilMail; // ✅ Impor Mailable khusus ekstra yang baru
 
 class TransactionController extends Controller
 {
@@ -33,43 +35,58 @@ class TransactionController extends Controller
         }
 
         // ===================================================================
-        // JALUR A: OTOMATIS JIKA INFAK EKSTRA (Mengandung pola '_user_')
+        // JALUR A: OTOMATIS JIKA INFAK EKSTRA (Mengandung pola 'ext_extra_')
         // ===================================================================
-        if (strpos($externalId, '_user_') !== false) {
+        if (str_contains($externalId, 'ext_extra')) {
             
-            // Contoh format: "program_2_user_1" dipecah menjadi ID Program & ID Member
-            $cleanString = str_replace('program_', '', $externalId);
-            $parts = explode('_user_', $cleanString);
+            // Format external_id asli: "ext_extra_timestamp_memberId_programId" (Contoh: ext_extra_1782018209_12_3)
+            $parts = explode('_', $externalId);
             
-            $programId = $parts[0]; // ID Program Ekstra
-            $userId = $parts[1];    // ID Anggota / Member
+            // Pastikan struktur array hasil explode sesuai (harus ada minimal 5 bagian)
+            if (count($parts) >= 5) {
+                // ✅ PERBAIKAN URUTAN INDEKS AGAR TIDAK TERTUKAR:
+                $userId    = $parts[3]; // Indeks 3 adalah ID Member / Anggota (Contoh: 12)
+                $programId = $parts[4]; // Indeks 4 adalah ID Program Ekstra (Contoh: 3 -> Infak Pohon)
+            } else {
+                Log::error('Format External ID Ekstra Tidak Valid: ' . $externalId);
+                return response()->json(['status' => 'error', 'message' => 'Format ID salah'], 400);
+            }
+
+            // Cari apakah transaksi dengan external_id tersebut ada di database kita
+            $transaction = DB::table('transactions')->where('external_id', $externalId)->first();
+
+            if (!$transaction) {
+                Log::error('Callback Webhook: Transaksi ekstra tidak ditemukan untuk ID ' . $externalId);
+                return response()->json(['status' => 'error', 'message' => 'Transaksi tidak ditemukan'], 404);
+            }
 
             try {
-                DB::transaction(function () use ($data, $programId, $userId) {
+                DB::transaction(function () use ($data, $transaction, $programId, $userId) {
                     
-                    // 1. Simpan data transaksi menggunakan Query Builder
-                    DB::table('transactions')->insert([
-                        'member_id'        => $userId,   
-                        'external_id'      => $data['external_id'],
-                        'amount'           => $data['amount'],
-                        'transaction_type' => 'ekstra', // <--- Set otomatis sebagai infak ekstra
-                        'bank_code'        => $data['bank_code'],
-                        'account_number'   => $data['account_number'],
-                        'payment_id'       => $data['id'] ?? null, 
-                        'periode'          => date('Y-m'),
-                        'created_at'       => now(),
-                        'updated_at'       => now(),
-                    ]);
+                    // 1. Mengisi payment_id agar tidak NULL dan status berubah jadi BERHASIL di frontend
+                    DB::table('transactions')
+                        ->where('id', $transaction->id)
+                        ->update([
+                            'payment_id' => $data['id'] ?? 'PAID_' . time(), 
+                            'updated_at' => now(),
+                        ]);
 
-                    // 2. Naikkan nominal uang yang terkumpul di tabel program utama (extra_programs)
-                    DB::table('extra_programs')
-                        ->where('id', $programId)
-                        ->increment('current_amount', $data['amount']);
+                    // ❌ LINGKUNGAN INDUSTRI: Baris increment lama sengaja dihapus dari sini
+                    // karena hitungan 'current_amount' dialihkan ke model ExtraProgram secara On-the-fly.
+
+                    // 📢 LOGIKA UTAMA EMAIL OTOMATIS: Kirim Notifikasi Pembayaran Ekstra Berhasil
+                    $program = DB::table('extra_programs')->where('id', $programId)->first();
+                    $member  = DB::table('members')->where('id', $userId)->first(); 
+
+                    if ($member && !empty($member->email)) {
+                        $namaProg = $program->name ?? 'Program Ekstra';
+                        Mail::to($member->email)->send(new PembayaranEkstraBerhasilMail($transaction, $namaProg));
+                    }
                 });
 
                 return response()->json([
                     'status' => 'success', 
-                    'message' => 'Pembayaran Infak Ekstra Anggota ID ' . $userId . ' Sukses Dicatat ke Program ID ' . $programId
+                    'message' => 'Pembayaran Infak Ekstra Anggota ID ' . $userId . ' Berhasil Diperbarui & Email Terkirim!'
                 ], 200);
 
             } catch (\Exception $e) {
@@ -79,7 +96,7 @@ class TransactionController extends Controller
         }
 
         // ===================================================================
-        // JALUR B: OTOMATIS JIKA INFAK REGULER (Tidak mengandung '_user_')
+        // JALUR B: OTOMATIS JIKA INFAK REGULER (Tidak mengandung 'ext_extra_')
         // ===================================================================
         try {
             // Mengambil angka ID member dari external_id reguler
@@ -98,6 +115,8 @@ class TransactionController extends Controller
                 'updated_at'       => now(),
             ]);
 
+            // 📝 Email Reguler sengaja dikosongkan dulu sesuai rencana barumu
+
             return response()->json([
                 'status' => 'success', 
                 'message' => 'Pembayaran Infak Reguler Anggota ID ' . $userId . ' Sukses Dicatat'
@@ -114,9 +133,6 @@ class TransactionController extends Controller
      */
     public function keuanganDashboard(Request $request)
     {
-        // -------------------------------------------------------------------
-        // [BARU] AMBIL DATA TOTAL AGREGAT UNTUK DIBAGI SESUAI ATURAN IKRA
-        // -------------------------------------------------------------------
         // Ambil total kotor keseluruhan infak reguler
         $totalKeseluruhan = DB::table('transactions')
                             ->where('transaction_type', 'reguler')
@@ -137,9 +153,7 @@ class TransactionController extends Controller
         // Akumulasi Kas Operasional Kantor Gabungan (35% Reguler + 35% Ekstra)
         $totalKasOperasionalKantor = $operasionalReguler + $operasionalEkstra;
 
-        // -------------------------------------------------------------------
-        // B. PROSES FILTER PERIODE BULANAN (BAWAKAN ASLI KODEMU)
-        // -------------------------------------------------------------------
+        // B. PROSES FILTER PERIODE BULANAN
         $periodeDipilih = $request->get('periode', date('Y-m'));
 
         // Total reguler per bulan terpilih
@@ -148,7 +162,6 @@ class TransactionController extends Controller
                             ->where('periode', $periodeDipilih)
                             ->sum('amount') ?? 0;
 
-        // Rumus 35% & 65% khusus untuk data bulanan yang sedang difilter (opsional untuk visual blade nanti)
         $operasionalPerPeriode = $totalPerPeriode * 0.35;
         $siapSalurPerPeriode   = $totalPerPeriode * 0.65;
 
@@ -171,7 +184,6 @@ class TransactionController extends Controller
         
         $riwayatTransaksi = $transactions;
 
-        // Kirim semua variabel lama + variabel pembagian dana baru ke view keuangan_dashboard
         return view('keuangan_dashboard', compact(
             'totalKeseluruhan', 
             'totalEkstra', 
@@ -198,19 +210,15 @@ class TransactionController extends Controller
         $payments = Transaction::where('transaction_type', 'ekstra')->latest()->get();
         $transactions = $payments;
 
-        // Total akumulasi dana ekstra
         $totalEkstra = DB::table('transactions')
                             ->where('transaction_type', 'ekstra')
                             ->sum('amount') ?? 0;
 
-        // Mengambil data performa target program dari extra_programs
         $daftarProgram = DB::table('extra_programs')->get();
 
-        // Tambahan pembagian di halaman ekstra agar sinkron jika sewaktu-waktu dipanggil di blade ekstra
         $operasionalEkstra = $totalEkstra * 0.35;
         $siapSalurEkstra   = $totalEkstra * 0.65;
 
-        // FIX JALUR: Mengarah ke folder 'keuangan' dan file 'keuangan_infak_ekstra'
         return view('keuangan.keuangan_infak_ekstra', compact(
             'payments', 
             'transactions', 
@@ -226,22 +234,18 @@ class TransactionController extends Controller
      */
     public function operasionalDashboard()
     {
-        // Ambil total kotor keseluruhan infak reguler dari database untuk dipotong 35%
         $totalReguler = DB::table('transactions')
                             ->where('transaction_type', 'reguler')
                             ->sum('amount') ?? 0;
         $operasionalReguler = $totalReguler * 0.35;
 
-        // Ambil total kotor keseluruhan infak ekstra dari database untuk dipotong 35%
         $totalEkstra = DB::table('transactions')
                             ->where('transaction_type', 'ekstra')
                             ->sum('amount') ?? 0;
         $operasionalEkstra = $totalEkstra * 0.35;
 
-        // Akumulasi Penggabungan Tunggal (Single Pool) Dana Operasional Yayasan
         $totalOperasionalGabungan = $operasionalReguler + $operasionalEkstra;
 
-        // Mengarah ke file view keuangan_operasional di dalam folder keuangan
         return view('keuangan.keuangan_operasional', compact(
             'operasionalReguler',
             'operasionalEkstra',
