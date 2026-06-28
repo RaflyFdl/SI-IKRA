@@ -10,6 +10,7 @@
 <body class="bg-slate-100 font-sans text-slate-800">
 
     <div class="flex min-h-screen">
+        <!-- Sidebar -->
         <div class="w-64 bg-slate-900 text-white p-6 space-y-6 flex flex-col justify-between shrink-0">
             <div class="space-y-6">
                 <div class="flex items-center space-x-3 border-b border-slate-700 pb-4">
@@ -21,13 +22,19 @@
                 </div>
                 
                 <nav class="space-y-2">
-                    <a href="{{ route('operational.dashboard') }}" class="flex items-center space-x-3 text-slate-300 hover:bg-slate-800 hover:text-white p-3 rounded-lg transition">
+                    <a href="{{ route('operational.dashboard') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.dashboard') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
                         <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="{{ route('operational.schedule') }}" class="flex items-center space-x-3 bg-emerald-600 text-white p-3 rounded-lg font-medium transition">
+                    
+                    <a href="{{ route('operational.schedule') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.schedule') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
                         <i class="fa-solid fa-calendar-days w-5 text-center"></i>
                         <span>Agenda & Jadwal</span>
+                    </a>
+
+                    <a href="{{ route('operational.pencairan') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.pencairan') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
+                        <span>Pencairan Dana Ekstra</span>
                     </a>
                 </nav>
             </div>
@@ -41,8 +48,8 @@
             </form>
         </div>
 
+        <!-- Main Content -->
         <div class="flex-1 p-10">
-            
             <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900">Pusat Penjadwalan & Operasional Program</h1>
@@ -72,7 +79,6 @@
             </div>
 
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                
                 @if($activeTab === 'donasi')
                     <div class="p-5 border-b border-slate-100 bg-slate-50/50">
                         <h2 class="text-base font-bold text-slate-800">Daftar Agenda Kerja: Donasi Umum</h2>
@@ -91,23 +97,16 @@
                                         $percentage = $program->target_amount > 0 ? min(round(($program->current_amount / $program->target_amount) * 100), 100) : 0;
                                     @endphp
                                     <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
-                                        
                                         <div class="space-y-3 flex-1">
                                             <div class="flex flex-wrap items-center gap-3">
                                                 @if($program->status === 'active')
-                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">
-                                                        🔴 Sedang Berjalan
-                                                    </span>
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">🔴 Sedang Berjalan</span>
                                                 @else
-                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">
-                                                        🏁 Selesai & Diarsipkan
-                                                    </span>
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">🏁 Selesai & Diarsipkan</span>
                                                 @endif
                                                 <h3 class="text-lg font-bold text-slate-800">{{ $program->name }}</h3>
                                             </div>
-                                            
                                             <p class="text-xs text-slate-500 max-w-2xl leading-relaxed">{{ $program->description }}</p>
-                                            
                                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 text-xs">
                                                 <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                                                     <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Dana Terkumpul</span>
@@ -124,9 +123,7 @@
                                                 </div>
                                                 <div class="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 text-slate-900">
                                                     <span class="text-emerald-700 block font-bold uppercase text-[9px] tracking-wider">Tanggal Kerja Pelaksanaan</span>
-                                                    <span class="font-bold block pt-0.5">
-                                                        📅 {{ $program->execution_date ? \Carbon\Carbon::parse($program->execution_date)->translatedFormat('d F Y') : 'Belum Dijadwalkan' }}
-                                                    </span>
+                                                    <span class="font-bold block pt-0.5">📅 {{ $program->execution_date ? \Carbon\Carbon::parse($program->execution_date)->translatedFormat('d F Y') : 'Belum Dijadwalkan' }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -149,7 +146,7 @@
                                                             <label class="text-[10px] font-bold uppercase tracking-wider text-rose-500 block">Selesaikan Program & Upload Dokumentasi</label>
                                                             <div class="flex flex-col gap-1.5">
                                                                 <input type="file" name="documentation" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer" required>
-                                                                <button type="submit" onclick="return confirm('Apakah Anda yakin program ini sudah sukses terlaksana dan ingin menutup penggalangan dana?')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg transition shadow-sm text-center cursor-pointer">
+                                                                <button type="submit" onclick="return confirm('Apakah Anda yakin program ini sudah sukses terlaksana?')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg transition shadow-sm text-center cursor-pointer">
                                                                     🏁 Program Selesai (Arsipkan)
                                                                 </button>
                                                             </div>
@@ -173,23 +170,7 @@
                         @endif
                     </div>
                 @endif
-
-                @if($activeTab === 'podcast')
-                    <div class="p-6 text-center text-slate-400 text-sm py-16">
-                        <span class="text-3xl block mb-2">🎙️</span>
-                        Panel operasional khusus penjadwalan episode Podcast & Rekaman.<br>
-                        <span class="text-xs text-slate-400 mt-1 block">(Fokus pengerjaan saat ini: Kategori Donasi Umum terlebih dahulu)</span>
-                    </div>
-                @endif
-
-                @if($activeTab === 'cinema')
-                    <div class="p-6 text-center text-slate-400 text-sm py-16">
-                        <span class="text-3xl block mb-2">🎬</span>
-                        Panel operasional khusus penjadwalan Cinema Edukasi & Pemutaran Layar Lebar.<br>
-                        <span class="text-xs text-slate-400 mt-1 block">(Fokus pengerjaan saat ini: Kategori Donasi Umum terlebih dahulu)</span>
-                    </div>
-                @endif
-
+                <!-- Tab lain disembunyikan untuk menjaga panjang kode -->
             </div>
         </div>
     </div>

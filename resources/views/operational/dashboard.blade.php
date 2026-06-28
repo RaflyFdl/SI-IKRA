@@ -9,6 +9,10 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800">
 
+    @php
+        $activeTab = request()->query('tab', $activeTab ?? 'donasi');
+    @endphp
+
     <div class="flex min-h-screen">
         <div class="w-64 bg-slate-900 text-white p-6 space-y-6 flex flex-col justify-between">
             <div class="space-y-6">
@@ -21,13 +25,19 @@
                 </div>
                 
                 <nav class="space-y-2">
-                    <a href="{{ route('operational.dashboard') }}" class="flex items-center space-x-3 text-slate-300 hover:bg-slate-800 hover:text-white p-3 rounded-lg transition">
+                    <a href="{{ route('operational.dashboard') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.dashboard') && !request()->routeIs('operational.pencairan') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
                         <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="{{ route('operational.schedule') }}" class="flex items-center space-x-3 bg-emerald-600 text-white p-3 rounded-lg font-medium transition">
+                    
+                    <a href="{{ route('operational.schedule') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.schedule') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
                         <i class="fa-solid fa-calendar-days w-5 text-center"></i>
                         <span>Agenda & Jadwal</span>
+                    </a>
+
+                    <a href="{{ route('operational.pencairan') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.pencairan') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
+                        <span>Pencairan Dana Ekstra</span>
                     </a>
                 </nav>
             </div>
@@ -77,7 +87,7 @@
                 </div>
 
                 @php
-                    $currentPrograms = $activeTab === 'donasi' ? $donasiPrograms : ($activeTab === 'podcast' ? $podcastPrograms : $cinemaPrograms);
+                    $currentPrograms = $activeTab === 'donasi' ? ($donasiPrograms ?? collect()) : ($activeTab === 'podcast' ? ($podcastPrograms ?? collect()) : ($cinemaPrograms ?? collect()));
                 @endphp
 
                 @if($currentPrograms->isEmpty())
@@ -122,16 +132,27 @@
                                         </form>
 
                                         @if($program->execution_date)
-                                            <form action="{{ route('operational.complete', $program->id) }}" method="POST" enctype="multipart/form-data" class="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                                                @csrf
-                                                <label class="block">
-                                                    <span class="sr-only">Pilih dokumentasi</span>
-                                                    <input type="file" name="documentation" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" required>
-                                                </label>
-                                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer whitespace-nowrap">
-                                                    Selesai & Laporkan
-                                                </button>
-                                            </form>
+                                            <div class="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                                <form action="{{ route('operational.complete', $program->id) }}" method="POST" enctype="multipart/form-data" class="flex items-center space-x-2">
+                                                    @csrf
+                                                    <label class="block">
+                                                        <span class="sr-only">Pilih documentation</span>
+                                                        <input type="file" name="documentation" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" required>
+                                                    </label>
+                                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer whitespace-nowrap">
+                                                        Selesai & Laporkan
+                                                    </button>
+                                                </form>
+
+                                                @if(isset($program->pengajuan_id))
+                                                    <div class="border-l border-slate-300 pl-2">
+                                                        <a href="{{ route('operational.laporan.form', $program->pengajuan_id) }}" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm inline-flex items-center space-x-1 whitespace-nowrap">
+                                                            <i class="fa-solid fa-file-invoice-dollar mr-1"></i>
+                                                            <span>Input Nota Belanja</span>
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         @endif
                                     @else
                                         <div class="flex items-center space-x-3 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
@@ -147,7 +168,7 @@
                                     @endif
                                 </div>
 
-                            </div>
+                             </div>
                         @endforeach
                     </div>
                 @endif

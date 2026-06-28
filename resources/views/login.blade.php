@@ -32,21 +32,29 @@
             @endif
 
             <form action="/login" method="POST" class="space-y-4">
-                @csrf <div class="space-y-1.5">
+                @csrf 
+                
+                <div class="space-y-1.5">
                     <label for="email" class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Alamat Email</label>
                     <input type="email" name="email" id="email" required placeholder="Masukkan email Anda (contoh: keuangan@ikra.com)" 
+                        value="{{ old('email') }}"
                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0b6e3f] focus:bg-white transition-all">
                     @error('email')
                         <span class="text-xs text-red-600 block mt-1">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <div class="bg-amber-50 border border-amber-200/60 p-3 rounded-xl text-[11px] text-amber-800 leading-relaxed">
-                    💡 <strong>Tips Simulasi Skripsi:</strong> Sistem mendeteksi role secara otomatis berdasarkan email yang terdaftar di database (Admin, Keuangan, atau Anggota).
+                <div class="space-y-1.5">
+                    <label for="password" class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Kata Sandi (Password)</label>
+                    <input type="password" name="password" id="password" required placeholder="••••••••" 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0b6e3f] focus:bg-white transition-all">
+                    @error('password')
+                        <span class="text-xs text-red-600 block mt-1">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <button type="submit" 
-                    class="w-full bg-[#0b6e3f] hover:bg-[#085430] text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-md tracking-wide mt-2 transform active:scale-[0.98]">
+                    class="w-full bg-[#0b6e3f] hover:bg-[#085430] text-white font-bold text-sm py-3.5 rounded-xl transition-all shadow-md tracking-wide mt-4 transform active:scale-[0.98]">
                     Masuk Sekarang
                 </button>
             </form>

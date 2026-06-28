@@ -90,15 +90,19 @@ class AuthController extends Controller
         return view('login');
     }
 
+    // 🎯 MODIFIKASI: Menambahkan validasi & pencocokan password pada proses Login
     public function processLogin(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
+            'password' => 'required', // Tambahkan validasi wajib diisi
         ]);
 
+        // Cek apakah akun merupakan Staff terlebih dahulu
         $staff = Staff::where('email', $request->email)->first();
 
-        if ($staff) {
+        // Jika Staff ditemukan, cek kecocokan password-nya
+        if ($staff && Hash::check($request->password, $staff->password)) {
             session(['logged_in_email' => $staff->email]);
 
             switch ($staff->role) {
@@ -113,16 +117,21 @@ class AuthController extends Controller
             }
         }
 
+        // Jika bukan staff, cek apakah akun merupakan Member
         $member = Member::where('email', $request->email)->first();
 
-        if ($member) {
+        // Jika Member ditemukan, cek kecocokan password-nya
+        if ($member && Hash::check($request->password, $member->password)) {
             if ($member->status === 'active') {
                 session(['logged_in_email' => $member->email]);
                 return redirect()->route('member.dashboard');
+            } else {
+                return back()->with('error', 'Akun Anda belum aktif atau sedang dalam peninjauan.');
             }
         }
 
-        return back()->with('error', 'Email tidak ditemukan.');
+        // Jika email salah, password salah, atau akun tidak terdaftar
+        return back()->with('error', 'Email atau password yang Anda masukkan salah.');
     }
 
     // 5. Dashboard member

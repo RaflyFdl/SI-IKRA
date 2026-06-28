@@ -58,7 +58,7 @@
                         <button
                             type="submit"
                             class="w-full bg-white text-[#0b6e3f] font-bold py-3 rounded-xl hover:bg-gray-100 transition">
-                            💳 Simulasi Pembayaran (Sandbox)
+                            Simulasi Pembayaran
                         </button>
                     </form>
                                 <p class="text-[10px] text-emerald-100 mt-2 text-center">

@@ -3,60 +3,40 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Staff;          // Di-import untuk cek session login keuangan
-use App\Models\ExtraProgram;   // Di-import untuk menghitung akumulasi infak ekstra
-// use App\Models\RegularTransaction; // SILAKAN DI-UNCOMMENT DAN SESUAIKAN JIKA NAMA MODEL TRANSAKSI REGULER KAMU SUDAH ADA
+use App\Models\Staff;          
+use App\Models\ExtraProgram;   
+use App\Models\DanaBackup; 
+use App\Models\PengajuanPencairanEkstra;
 
 class KeuanganController extends Controller
 {
     /**
-     * Menampilkan Dashboard Utama Bagian Keuangan dengan Alokasi Otomatis 35% & 65%
+     * Halaman Dashboard Utama Keuangan
      */
     public function dashboard()
     {
-        // Kunci keamanan: Pastikan yang mengakses sudah login sebagai staff keuangan
         $sessionEmail = session('logged_in_email');
-
         if (!$sessionEmail) {
             return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
         }
 
         $staff = Staff::where('email', $sessionEmail)->where('role', 'keuangan')->first();
-
         if (!$staff) {
             return redirect()->route('login')->with('error', 'Akses ditolak! Halaman ini khusus untuk Bagian Keuangan.');
         }
 
-        // ===================================================================
-        // LOGIC 1: HITUNG REAL-TIME TOTAL INFAK REGULER (DARI VA PRIBADI ANGGOTA)
-        // ===================================================================
-        // Sementara kita buat statis/contoh dulu Rp 10.000.000 jika model belum siap. 
-        // Nanti jika tabel transaksi reguler sudah ada, tinggal ganti baris bawah ini dengan:
-        // $totalRegulerMasuk = RegularTransaction::where('status', 'success')->sum('amount');
         $totalRegulerMasuk = 10000000; 
-
-        // Rumus Alokasi Aturan IKRA (35% dan 65%)
         $operasionalReguler = $totalRegulerMasuk * 0.35;
         $siapSalurReguler   = $totalRegulerMasuk * 0.65;
 
-
-        // ===================================================================
-        // LOGIC 2: HITUNG REAL-TIME TOTAL INFAK EKSTRA (DARI VA PROGRAM EKSTRA)
-        // ===================================================================
-        // Menghitung total dana kotor yang terkumpul dari seluruh program ekstra di database
-        $totalEkstraMasuk = ExtraProgram::sum('current_amount');
-
-        // Rumus Alokasi Aturan IKRA (35% dan 65%)
-        $operasionalEkstra = $totalEkstraMasuk * 0.35;
-        $siapSalurEkstra   = $totalEkstraMasuk * 0.65;
-
-
-        // ===================================================================
-        // LOGIC 3: GABUNGAN REKAPITULASI KAS OPERASIONAL INTERNAL KANTOR
-        // ===================================================================
+        $siapSalurEkstra   = ExtraProgram::sum('dana_bersih_ekstra');
+        $operasionalEkstra = ExtraProgram::sum('dana_operasional_ekstra');
+        $totalEkstraMasuk  = ExtraProgram::sum('current_amount');
         $totalKasOperasionalKantor = $operasionalReguler + $operasionalEkstra;
 
-        // Kirim semua hasil perhitungan matematika ke view keuangan
+        // FIX: Menggunakan kolom 'selisih' dan whereIn untuk tabel laporan_penggunaan
+        $totalDanaBackupEkstra = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])->sum('selisih');
+
         return view('keuangan.dashboard', compact(
             'staff',
             'totalRegulerMasuk',
@@ -65,7 +45,48 @@ class KeuanganController extends Controller
             'totalEkstraMasuk',
             'operasionalEkstra',
             'siapSalurEkstra',
-            'totalKasOperasionalKantor'
+            'totalKasOperasionalKantor',
+            'totalDanaBackupEkstra'
+        ));
+    }
+
+    /**
+     * 🌟 FIX: Fungsi Penampil Halaman Infak Ekstra Khusus
+     * Route URL: /keuangan/infak-ekstra
+     */
+    public function infakEkstra()
+    {
+        // 1. Verifikasi Sesi
+        $sessionEmail = session('logged_in_email');
+        $staff = Staff::where('email', $sessionEmail)->where('role', 'keuangan')->first();
+
+        // 2. Ambil Data Program Kerja Aktif untuk Grid Progress Bar
+        $daftarProgram = ExtraProgram::all();
+
+        // 3. Hitung Kalkulasi Total Dana Ekstra Masuk Global
+        $totalEkstra = ExtraProgram::sum('current_amount');
+
+        // 4. FIX: Hitung Akumulasi dari kolom 'selisih' di database
+        $totalDanaBackupEkstra = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])->sum('selisih');
+
+        // 5. FIX: Ambil Riwayat Pengembalian berdasarkan tabel laporan_penggunaan
+        $riwayatDanaBackup = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])
+                                        ->with(['pengajuan.extraProgram'])
+                                        ->orderBy('created_at', 'desc')
+                                        ->get();
+
+        // 6. Ambil Daftar Antrean Permintaan Pencairan Dana Awal
+        $antreanPencairan = PengajuanPencairanEkstra::where('status', 'PENDING')
+                                                    ->with('extraProgram')
+                                                    ->get();
+
+        return view('keuangan.keuangan_infak_ekstra', compact(
+            'staff',
+            'daftarProgram', 
+            'totalEkstra', 
+            'totalDanaBackupEkstra', 
+            'riwayatDanaBackup',
+            'antreanPencairan'
         ));
     }
 }

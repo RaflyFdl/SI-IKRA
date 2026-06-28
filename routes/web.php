@@ -7,6 +7,7 @@ use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\MemberDashboardController; // Tetap di-import untuk tab profil
 use App\Http\Controllers\PaymentSimulationController; // Controller simulasi pembayaran
 use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
+use App\Http\Controllers\PenyaluranEkstraController; // ✅ IMPORT CONTROLLER PENYALURAN BARU
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -108,6 +109,12 @@ Route::get('/keuangan/infak-ekstra', [TransactionController::class, 'infakEkstra
 
 Route::get('/keuangan/operasional', [TransactionController::class, 'operasionalDashboard'])->name('keuangan.operasional');
 
+// 🚀 ROUTE BARU KEUANGAN: Memproses cairkan uang tekor (reimburse)
+Route::post('/keuangan/penyaluran-ekstra/reimburse/{pengajuanId}', [PenyaluranEkstraController::class, 'prosesReimburse'])->name('keuangan.reimburse.proses');
+
+// 💰 ROUTE TAMBAHAN KEUANGAN: Memproses konfirmasi pencairan modal awal kerja (Upload Bukti Transfer)
+Route::post('/keuangan/penyaluran-ekstra/cairkan/{pengajuanId}', [PenyaluranEkstraController::class, 'prosesCairkanAwal'])->name('keuangan.cairkan.proses');
+
 
 // ==========================================
 // 4.5 JALUR KHUSUS OPERASIONAL
@@ -119,6 +126,16 @@ Route::get('/operasional/jadwal', [ProgramController::class, 'operationalSchedul
 Route::post('/operasional/program/{id}/update-date', [ProgramController::class, 'updateExecutionDate'])->name('operational.update-date');
 
 Route::post('/operasional/program/{id}/complete', [ProgramController::class, 'completeProgram'])->name('operational.complete');
+
+// 🛠️ TAMBAHAN ROUTE BARU OPERASIONAL: HALAMAN PENCAIRAN DANA EKSTRA (AWAL ALUR)
+Route::get('/operasional/pencairan-ekstra', [PenyaluranEkstraController::class, 'pencairanEkstra'])->name('operational.pencairan');
+Route::post('/operasional/pencairan-ekstra/store', [PenyaluranEkstraController::class, 'storePencairan'])->name('operational.pencairan.store');
+
+// 🚀 ROUTE BARU OPERASIONAL: Menampilkan halaman form input nota belanja
+Route::get('/operasional/penyaluran-ekstra/laporan/{pengajuanId}', [PenyaluranEkstraController::class, 'showLaporanForm'])->name('operational.laporan.form');
+
+// 🚀 ROUTE BARU OPERASIONAL: Menginput/menyimpan laporan nota pengeluaran belanja dana ekstra
+Route::post('/operasional/penyaluran-ekstra/laporan/{pengajuanId}', [PenyaluranEkstraController::class, 'simpanLaporan'])->name('operational.laporan.store');
 
 
 // ==========================================

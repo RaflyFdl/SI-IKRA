@@ -15,7 +15,7 @@
                 </div>
             </div>
             <p class="text-xs text-amber-700 mt-2 leading-relaxed">
-                Nomor Virtual Account ini bersifat **Closed (Terkunci)**. Segera selesaikan pembayaran sebelum waktu di atas habis agar transaksi Anda tidak otomatis dibatalkan oleh sistem.
+                Segera selesaikan pembayaran sebelum waktu di atas habis agar transaksi Anda tidak otomatis dibatalkan oleh sistem.
             </p>
         </div>
     </div>
@@ -54,9 +54,6 @@
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jumlah Pembayaran</span>
                 <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 flex items-center justify-between">
                     <strong class="text-xl md:text-2xl font-bold text-emerald-700">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</strong>
-                    <span class="text-xs font-semibold text-emerald-600 bg-emerald-100/70 px-2.5 py-1 rounded-md">
-                        🔒 Nominal Terkunci
-                    </span>
                 </div>
                 <p class="text-[11px] text-emerald-700 font-medium leading-relaxed">
                     ✨ *Nominal di atas akan langsung muncul secara otomatis di layar ATM / M-Banking Anda setelah Anda memasukkan nomor Virtual Account di atas dengan benar.
@@ -71,7 +68,7 @@
             <form action="{{ route('member.extra.simulate', $transaction->id) }}" method="POST" class="w-full sm:w-1/2">
                 @csrf
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-3 px-4 rounded-xl shadow transition duration-200 cursor-pointer text-center block">
-                    ⚡ Demo Bayar Instan
+                    Demo Bayar
                 </button>
             </form>
         </div>
