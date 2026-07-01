@@ -9,6 +9,7 @@ use App\Http\Controllers\PaymentSimulationController; // Controller simulasi pem
 use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
 use App\Http\Controllers\PenyaluranEkstraController; // ✅ IMPORT CONTROLLER PENYALURAN BARU
 use App\Http\Controllers\PenyaluranRegulerController; // ✅ IMPORT CONTROLLER PENYALURAN REGULER BARU
+use App\Http\Controllers\PodcastController; // ✅ IMPORT CONTROLLER PODCAST BARU
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -152,6 +153,10 @@ Route::post('/operasional/penyaluran-reguler/laporan/{id}', [PenyaluranRegulerCo
 // 📅 ROUTE BARU OPERASIONAL (JSON API): Jalur data kalender dinamis untuk dashboard operasional
 Route::get('/operasional/calendar-events', [ProgramController::class, 'getCalendarEvents'])->name('operational.calendar.events');
 
+// 🎙️ ROUTE BARU OPERASIONAL (PODCAST SYSTEM): Modul Kreatif & Pengajuan Dana Konten
+Route::get('/operasional/podcast/create', [PodcastController::class, 'create'])->name('operational.podcast.create');
+Route::post('/operasional/podcast/store', [PodcastController::class, 'store'])->name('operational.podcast.store');
+
 
 // ==========================================
 // 4.8 JALUR KHUSUS PEMBINA (TAMBAHAN BARU)
@@ -179,8 +184,8 @@ Route::post('/simulate-payment/{memberId}', [PaymentSimulationController::class,
 // ==========================================
 // 7. JALUR BACKDOOR SIMULASI (UNTUK SIDANG)
 // ==========================================
-// 🚀 TINGGAL AKSES URL: localhost:8000/bayar-rahasia/NOMOR_VA_DI_LAYAR
-Route::get('/bayar-rahasia/{va_number}', [ExtraProgramController::class, 'backdoorSimulate'])
+// 🎯 DIUBAH SIKIT: Menyelaraskan nama parameter URL dengan variabel $vaNumber pada Controller baru
+Route::get('/member/extra/backdoor/{vaNumber}', [ExtraProgramController::class, 'backdoorSimulate'])
     ->name('member.extra.backdoor');
 
 // 🔍 ROUTE AUTO-CHECK: Mengecek status transaksi secara real-time dari script Blade

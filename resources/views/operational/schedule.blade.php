@@ -58,6 +58,11 @@
                     <h1 class="text-2xl font-bold text-slate-900">Pusat Penjadwalan & Operasional Program</h1>
                     <p class="text-sm text-slate-500 mt-1">Kelola tanggal pelaksanaan, pantau progress pendanaan, dan unggah dokumentasi penyelesaian program kerja secara berkala.</p>
                 </div>
+                @if($activeTab === 'podcast')
+                    <a href="{{ route('operational.podcast.create') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Buat Jadwal Podcast
+                    </a>
+                @endif
             </div>
 
             @if(session('success'))
@@ -170,6 +175,48 @@
                                             @endif
                                         </div>
                                     </div>
+
+                                @elseif($activeTab === 'podcast')
+                                    <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
+                                        <div class="space-y-3 flex-1">
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                @if($program->status === 'requested')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">⏳ Pengajuan Dana</span>
+                                                @elseif($program->status === 'approved')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 uppercase border border-blue-200">💸 Siap Produksi</span>
+                                                @else
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">🎬 Selesai Tayang</span>
+                                                @endif
+                                                <h3 class="text-lg font-bold text-slate-800">{{ $program->title }}</h3>
+                                            </div>
+                                            <p class="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                                                <strong class="text-slate-700">Topik Pembahasan:</strong> {{ $program->topic }}
+                                            </p>
+                                            
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 text-xs">
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Host</span>
+                                                    <span class="font-bold text-slate-700 block">{{ $program->host }}</span>
+                                                </div>
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Narasumber</span>
+                                                    <span class="font-bold text-slate-700 block">{{ $program->guest_star }}</span>
+                                                </div>
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Estimasi Anggaran</span>
+                                                    <span class="font-bold text-emerald-600 block">Rp {{ number_format($program->amount_requested, 0, ',', '.') }}</span>
+                                                </div>
+                                                <div class="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 text-slate-900">
+                                                    <span class="text-emerald-700 block font-bold uppercase text-[9px] tracking-wider">Jadwal Taping</span>
+                                                    <span class="font-bold block pt-0.5">🎥 {{ $program->taping_date ? $program->taping_date->translatedFormat('d M Y - H:i') : '-' }} WIB</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 text-right text-xs text-slate-400">
+                                            Tayang: {{ $program->airing_date ? $program->airing_date->translatedFormat('d M Y') : 'Belum ditentukan' }}
+                                        </div>
+                                    </div>
+
                                 @else
                                     @php
                                         $percentage = $program->target_amount > 0 ? min(round(($program->current_amount / $program->target_amount) * 100), 100) : 0;
@@ -210,7 +257,6 @@
                                             @if($program->status === 'active')
                                                 <form action="{{ route('operational.update-date', $program->id) }}" method="POST" class="space-y-1">
                                                     @csrf
-                                                    <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Set / Ubah Tanggal Kerja</label>
                                                     <div class="flex gap-2">
                                                         <input type="date" name="execution_date" value="{{ $program->execution_date }}" class="p-2 border border-slate-200 rounded-lg text-xs w-full focus:outline-none focus:border-emerald-500" required>
                                                         <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm shrink-0 cursor-pointer">Simpan</button>

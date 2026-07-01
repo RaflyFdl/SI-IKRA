@@ -74,7 +74,7 @@
                     <p class="text-sm text-slate-500 mt-1">Pantau ringkasan statistik program kerja dan kelola timeline agenda eksekusi lapangan secara.</p>
                 </div>
             </div>
-
+<!--
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center space-x-4">
                     <div class="bg-slate-100 p-3.5 rounded-xl text-xl">🎁</div>
@@ -105,6 +105,7 @@
                     </div>
                 </div>
             </div>
+-->
 
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
                 <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">

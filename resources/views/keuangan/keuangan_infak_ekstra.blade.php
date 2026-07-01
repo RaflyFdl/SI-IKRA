@@ -52,15 +52,7 @@
         @endif
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block">Total Dana Ekstra Masuk</span>
-                    <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
-                        Rp {{ number_format($totalEkstra ?? 0, 0, ',', '.') }}
-                    </h3>
-                </div>
-                
-            </div>
+            
 
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 flex items-center justify-between bg-gradient-to-br from-white to-emerald-50/20">
                 <div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ExtraProgram;
 use App\Models\Member; // Import model Member untuk mengambil email anggota
+use App\Models\Podcast; // 1. TAMBAHAN: Import model Podcast agar bisa digunakan di controller ini
 use App\Mail\ProgramEkstraDibuatMail; // Import kelas Mail kustom yang sudah dibuat sebelumnya
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -27,12 +28,12 @@ class ProgramController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input fleksibel (target_amount, end_date, dan execution_date diubah jadi nullable agar aman)
+        // Validasi input fleksibel 
         $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string',
             'description' => 'required|string',
-            'target_amount' => 'nullable|numeric|min:1000',
+            'target_amount' => 'nullable|numeric|min:0',
             'end_date' => 'nullable|date',
             'execution_date' => 'nullable|date', // Validasi tanggal pelaksanaan opsional di awal
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Batasi gambar maks 2MB
@@ -47,10 +48,17 @@ class ProgramController extends Controller
         // Tentukan nilai berdasarkan kategori pilihan
         $targetAmount = $request->target_amount;
         $endDate = $request->end_date;
+        $executionDate = $request->execution_date;
 
         if (in_array($request->category, ['Podcast', 'Cinema Edukasi'])) {
-            $targetAmount = null; // Tidak terbatas dana untuk media operasional
-            $endDate = null;      // Terbuka terus tanpa batasan waktu penggalangan
+            // 🎯 PERBAIKAN: Berikan nilai default aman karena kolom database di-set NOT NULL
+            $targetAmount = 0; 
+            $endDate = '2099-12-31'; // Tanggal jauh di masa depan agar program dianggap terbuka selamanya
+            
+            // Jika execution_date ternyata juga memicu error NOT NULL, berikan tanggal hari ini
+            if (empty($executionDate)) {
+                $executionDate = now()->format('Y-m-d');
+            }
         }
 
         // Simpan data program ke database
@@ -60,7 +68,7 @@ class ProgramController extends Controller
             'description' => $request->description,
             'target_amount' => $targetAmount,
             'end_date' => $endDate,
-            'execution_date' => $request->execution_date, 
+            'execution_date' => $executionDate, 
             'image_path' => $imagePath,
             'status' => 'active'
         ]);
@@ -135,14 +143,16 @@ class ProgramController extends Controller
     // ==========================================
 
     /**
-     * 4. Menampilkan Dashboard Ringkasan Kerja Operasional
+     * 4. Menampilkan Dashboard Ringkasan Kerja Operasional (SINKRON DENGAN MODEL PODCAST)
      */
     public function operationalDashboard()
     {
-        // Hitung total program kerja berdasarkan 3 kategori utama
+        // Hitung total program kerja berdasarkan kategori masing-masing
         $totalDonasi = ExtraProgram::where('category', 'Donasi Umum')->count();
-        $totalPodcast = ExtraProgram::where('category', 'Podcast')->count();
         $totalCinema = ExtraProgram::where('category', 'Cinema Edukasi')->count();
+        
+        // Hitung jumlah data asli dari model/tabel Podcast
+        $totalPodcast = Podcast::count(); 
         
         // Hitung semua program aktif yang tanggal pelaksanaannya belum dijadwalkan oleh operasional
         $jadwalPending = ExtraProgram::where('status', 'active')
@@ -153,7 +163,7 @@ class ProgramController extends Controller
     }
 
     /**
-     * 5. Menampilkan Halaman Pusat Jadwal Kerja Terintegrasi (FIXED: Ditambah Program Reguler)
+     * 5. Menampilkan Halaman Pusat Jadwal Kerja Terintegrasi (SINKRON DENGAN MODEL PODCAST)
      */
     public function operationalSchedule(Request $request)
     {
@@ -165,9 +175,9 @@ class ProgramController extends Controller
                                       ->orderBy('execution_date', 'asc')
                                       ->get();
 
-        $podcastPrograms = ExtraProgram::where('category', 'Podcast')
-                                       ->orderBy('execution_date', 'asc')
-                                       ->get();
+        // Mengambil data jadwal langsung dari model Podcast, bukan ExtraProgram
+        $podcastPrograms = Podcast::orderBy('taping_date', 'asc')
+                                  ->get();
 
         $cinemaPrograms = ExtraProgram::where('category', 'Cinema Edukasi')
                                       ->orderBy('execution_date', 'asc')
@@ -232,18 +242,17 @@ class ProgramController extends Controller
     }
 
     /**
-     * 8. Menyediakan data JSON Jadwal Kegiatan untuk Kalender Dashboard (Dinamis Ekstra & Reguler)
+     * 8. Menyediakan data JSON Jadwal Kegiatan untuk Kalender Dashboard (SINKRON DENGAN MODEL PODCAST)
      */
     public function getCalendarEvents()
     {
         $events = [];
 
-        // 1. Ambil data dari Program Infak Ekstra yang sudah ditentukan tanggal pelaksanaannya
+        // 1. Ambil data dari Program Infak Ekstra (Hanya Donasi Umum & Cinema Edukasi) yang sudah ditentukan tanggal pelaksanaannya
         $ekstraPrograms = ExtraProgram::whereNotNull('execution_date')->get();
         foreach ($ekstraPrograms as $program) {
             // Tentukan warna latar belakang berdasarkan kategori program
             $color = '#0f172a'; // Default Slate 900 (Donasi Umum)
-            if ($program->category === 'Podcast') $color = '#a855f7'; // Ungu 500
             if ($program->category === 'Cinema Edukasi') $color = '#3b82f6'; // Biru 500
 
             $events[] = [
@@ -254,6 +263,23 @@ class ProgramController extends Controller
                 'extendedProps' => [
                     'tipe' => 'Ekstra',
                     'detail' => $program->description
+                ]
+            ];
+        }
+
+        // Ambil data dari model Podcast asli untuk dirender ke Kalender sistem
+        $podcastPrograms = Podcast::whereNotNull('taping_date')->get();
+        foreach ($podcastPrograms as $podcast) {
+            $color = '#a855f7'; // Warna Ungu 500 (Sesuai legenda warna Podcast Anda)
+
+            $events[] = [
+                'title' => '[Podcast] ' . $podcast->title,
+                'start' => is_string($podcast->taping_date) ? $podcast->taping_date : $podcast->taping_date->format('Y-m-d H:i:s'),
+                'backgroundColor' => $color,
+                'borderColor' => $color,
+                'extendedProps' => [
+                    'tipe' => 'Podcast',
+                    'detail' => 'Topic: ' . $podcast->topic . ' | Host: ' . $podcast->host . ' | Guest: ' . $podcast->guest_star
                 ]
             ];
         }
