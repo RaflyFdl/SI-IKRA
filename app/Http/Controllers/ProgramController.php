@@ -135,7 +135,7 @@ class ProgramController extends Controller
     // ==========================================
 
     /**
-     * 4. Menampilkan Dashboard Ringkasan Kerja Operasional (Sudah disesuaikan)
+     * 4. Menampilkan Dashboard Ringkasan Kerja Operasional
      */
     public function operationalDashboard()
     {
@@ -153,7 +153,7 @@ class ProgramController extends Controller
     }
 
     /**
-     * 5. Menampilkan Halaman Pusat Jadwal Kerja Terintegrasi (3 Pilihan Kategori / Tab)
+     * 5. Menampilkan Halaman Pusat Jadwal Kerja Terintegrasi (FIXED: Ditambah Program Reguler)
      */
     public function operationalSchedule(Request $request)
     {
@@ -173,10 +173,16 @@ class ProgramController extends Controller
                                       ->orderBy('execution_date', 'asc')
                                       ->get();
 
+        // 🎯 GABUNGAN OPERASIONAL: Mengambil data Penyaluran Reguler yang siap dijalankan tim operasional
+        $regulerPrograms = \App\Models\PenyaluranReguler::whereIn('status', ['disetujui', 'dicairkan', 'dilaporkan'])
+                                      ->orderBy('tanggal_pelaksanaan', 'asc')
+                                      ->get();
+
         return view('operational.schedule', compact(
             'donasiPrograms', 
             'podcastPrograms', 
             'cinemaPrograms', 
+            'regulerPrograms', // Data terkirim ke view
             'activeTab'
         ));
     }
@@ -223,5 +229,53 @@ class ProgramController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Selamat! Program berhasil diselesaikan dan bukti dokumentasi lapangan telah diarsipkan.');
+    }
+
+    /**
+     * 8. Menyediakan data JSON Jadwal Kegiatan untuk Kalender Dashboard (Dinamis Ekstra & Reguler)
+     */
+    public function getCalendarEvents()
+    {
+        $events = [];
+
+        // 1. Ambil data dari Program Infak Ekstra yang sudah ditentukan tanggal pelaksanaannya
+        $ekstraPrograms = ExtraProgram::whereNotNull('execution_date')->get();
+        foreach ($ekstraPrograms as $program) {
+            // Tentukan warna latar belakang berdasarkan kategori program
+            $color = '#0f172a'; // Default Slate 900 (Donasi Umum)
+            if ($program->category === 'Podcast') $color = '#a855f7'; // Ungu 500
+            if ($program->category === 'Cinema Edukasi') $color = '#3b82f6'; // Biru 500
+
+            $events[] = [
+                'title' => '[' . $program->category . '] ' . $program->name,
+                'start' => $program->execution_date,
+                'backgroundColor' => $color,
+                'borderColor' => $color,
+                'extendedProps' => [
+                    'tipe' => 'Ekstra',
+                    'detail' => $program->description
+                ]
+            ];
+        }
+
+        // 2. Ambil data dari Program Infak Reguler yang siap jalan
+        $regulerPrograms = \App\Models\PenyaluranReguler::whereIn('status', ['disetujui', 'dicairkan', 'dilaporkan'])
+            ->whereNotNull('tanggal_pelaksanaan')
+            ->get();
+
+        foreach ($regulerPrograms as $reguler) {
+            $events[] = [
+                'title' => '[Reguler] ' . $reguler->nama_program,
+                'start' => $reguler->tanggal_pelaksanaan,
+                'backgroundColor' => '#10b981', // Emerald 500 (Hijau)
+                'borderColor' => '#10b981',
+                'extendedProps' => [
+                    'tipe' => 'Reguler',
+                    'detail' => 'Target Penerima: ' . $reguler->penerima_manfaat
+                ]
+            ];
+        }
+
+        return response()->json($events);
     }
 }

@@ -24,60 +24,79 @@ class ExtraProgramController extends Controller
     // 2. Fungsi memproses pembuatan Closed VA Xendit (Valid 2 Jam)
     public function checkout(Request $request, $id)
     {
-        // Validasi minimal input nominal
-        $request->validate([
+        // Validasi input form
+        $validator = \Validator::make($request->all(), [
             'nominal' => 'required|numeric|min:10000',
-        ], [
-            'nominal.min' => 'Minimal infak adalah Rp 10.000'
+            'bank_code' => 'required|string|in:BCA,MANDIRI,BRI,BNI,PERMATA,MUAMALAT',
         ]);
 
-        // Mengambil data email dari session login member aplikasi Anda
-        $sessionEmail = session('logged_in_email');
+        if ($validator->fails()) {
+            dd([
+                'PESAN_ERROR' => 'Validasi Form Gagal! Ada input yang tidak sesuai aturan.',
+                'input_dari_form' => $request->all(),
+                'list_kesalahan' => $validator->errors()->all()
+            ]);
+        }
+
+        // Ambil session email yang disesuaikan (Opsi session: 'email')
+        $sessionEmail = session('email') ?? session('logged_in_email');
         $member = DB::table('members')->where('email', $sessionEmail)->first();
         $program = DB::table('extra_programs')->where('id', $id)->first();
 
+        // Cek data member dan program di database
         if (!$member || !$program) {
-            return back()->with('error', 'Data Anggota atau Program tidak ditemukan.');
+            dd([
+                'PESAN_ERROR' => 'Gagal lolos pengecekan Member atau Program di database!',
+                'email_di_session' => $sessionEmail,
+                'data_member_ditemukan' => $member,
+                'data_program_ditemukan' => $program
+            ]);
         }
 
         $apiKey = env('XENDIT_SECRET_KEY');
         $externalId = 'ext_extra_' . time() . '_' . $member->id . '_' . $id;
 
-        // Hit API Xendit untuk membuat CLOSED VIRTUAL ACCOUNT Bank Muamalat
+        // 🎯 DISESUAIKAN: Menggunakan Endpoint Closed VA Universal agar Sinkron dengan is_closed
         $response = Http::withBasicAuth($apiKey, '')
             ->withoutVerifying()
             ->post('https://api.xendit.co/callback_virtual_accounts', [
                 'external_id' => $externalId,
-                'bank_code' => 'MUAMALAT',
+                'bank_code' => $request->bank_code,
                 'name' => 'IKRA - ' . Str::limit($member->nama, 10),
-                'is_closed' => true, // Mengunci nominal pembayaran agar pas otomatis
+                'is_closed' => true, 
                 'expected_amount' => (int) $request->nominal,
-                'expiration_date' => now()->addHours(2)->toIso8601String() // Kedaluwarsa dalam 2 Jam
+                'expiration_date' => now()->addHours(2)->toIso8601String()
             ]);
 
-        if ($response->successful()) {
-            $resData = $response->json();
-
-            // Menyimpan riwayat transaksi ke tabel lokal dengan tipe 'ekstra'
-            $transactionId = DB::table('transactions')->insertGetId([
-                'transaction_type' => 'ekstra', // Menandakan infak ekstra
-                'member_id' => $member->id,
-                'extra_program_id' => $program->id,
-                'external_id' => $externalId,
-                'amount' => $request->nominal,
-                'bank_code' => 'MUAMALAT',
-                'account_number' => $resData['account_number'],
-                'payment_id' => null, // Diisi nanti setelah sukses lewat Webhook
-                'periode' => now()->format('Y-m'),
-                'created_at' => now(),
-                'updated_at' => now()
+        // Jika API Xendit menolak atau gagal merespon
+        if (!$response->successful()) {
+            dd([
+                'PESAN_ERROR' => 'API Xendit menolak request pembuatan Virtual Account!',
+                'status_code_xendit' => $response->status(),
+                'detail_error_dari_xendit' => json_decode($response->body(), true) ?? $response->body(),
+                'api_key_yang_dipakai' => substr($apiKey, 0, 15) . '...'
             ]);
-
-            // Diarahkan ke halaman instruksi invoice pembayaran
-            return redirect()->route('member.extra.invoice', $transactionId);
         }
 
-        return back()->with('error', 'Gagal terhubung dengan server Xendit. Silakan coba lagi.');
+        $resData = $response->json();
+
+        // Menyimpan riwayat transaksi ke tabel lokal jika sukses
+        $transactionId = DB::table('transactions')->insertGetId([
+            'transaction_type' => 'ekstra',
+            'member_id' => $member->id,
+            'extra_program_id' => $program->id,
+            'external_id' => $externalId,
+            'amount' => $request->nominal,
+            'bank_code' => $request->bank_code,
+            'account_number' => $resData['account_number'],
+            'payment_id' => null,
+            'periode' => now()->format('Y-m'),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        // Diarahkan ke halaman instruksi invoice pembayaran
+        return redirect()->route('member.extra.invoice', $transactionId);
     }
 
     // 3. Fungsi menampilkan halaman Invoice / Instruksi Pembayaran
@@ -96,18 +115,17 @@ class ExtraProgramController extends Controller
         return view('member.extra.invoice', compact('transaction'));
     }
 
-    // 4. Fungsi Demo Pembayaran Instan (Hit Simulator Xendit)
-    public function simulatePayment($transactionId)
+    // 4. Jalur rahasia backdoor menggunakan NOMOR VA untuk simulasi langsung dari browser
+    public function backdoorSimulate($vaNumber)
     {
-        $trx = DB::table('transactions')->where('id', $transactionId)->first();
+        $trx = DB::table('transactions')->where('account_number', $vaNumber)->first();
         
         if (!$trx) {
-            return back()->with('error', 'Transaksi tidak ditemukan.');
+            return "Waduh, nomor Virtual Account " . $vaNumber . " tidak ditemukan di database lokal.";
         }
 
         $apiKey = env('XENDIT_SECRET_KEY');
 
-        // Mengirim instruksi ke simulator Xendit seolah-olah user bayar dari ATM/M-Banking
         $response = Http::withBasicAuth($apiKey, '')
             ->withoutVerifying()
             ->post("https://api.xendit.co/callback_virtual_accounts/external_id={$trx->external_id}/simulate_payment", [
@@ -115,10 +133,15 @@ class ExtraProgramController extends Controller
             ]);
 
         if ($response->successful()) {
-            return redirect()->route('member.dashboard')
-                ->with('success', 'Demo Pembayaran Sukses! Server Xendit akan segera mengirimkan data ke sistem.');
+            return "
+                <script>
+                    alert('Simulasi pembayaran untuk VA " . $trx->account_number . " sebesar Rp " . number_format($trx->amount, 0, ',', '.') . " berhasil terkirim ke Xendit!');
+                    window.close();
+                </script>
+                <p>Pembayaran sukses disimulasikan. Silakan tutup tab ini dan refresh halaman invoice Anda.</p>
+            ";
         }
 
-        return back()->with('error', 'Gagal melakukan simulasi pembayaran: ' . $response->body());
+        return 'Gagal melakukan simulasi pembayaran ke Xendit: ' . $response->body();
     }
 }

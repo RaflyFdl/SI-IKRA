@@ -10,7 +10,6 @@
 <body class="bg-slate-100 font-sans text-slate-800">
 
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
         <div class="w-64 bg-slate-900 text-white p-6 space-y-6 flex flex-col justify-between shrink-0">
             <div class="space-y-6">
                 <div class="flex items-center space-x-3 border-b border-slate-700 pb-4">
@@ -36,6 +35,11 @@
                         <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
                         <span>Pencairan Dana Ekstra</span>
                     </a>
+
+                    <a href="{{ route('operational.penyaluran-reguler.index') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.penyaluran-reguler.index') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-heart-circle-check w-5 text-center"></i>
+                        <span>Penyaluran Infak Reguler</span>
+                    </a>
                 </nav>
             </div>
 
@@ -48,7 +52,6 @@
             </form>
         </div>
 
-        <!-- Main Content -->
         <div class="flex-1 p-10">
             <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
@@ -63,7 +66,7 @@
                 </div>
             @endif
 
-            <div class="border-b border-slate-200 bg-white p-2 rounded-xl flex gap-2 shadow-sm mb-6">
+            <div class="border-b border-slate-200 bg-white p-2 rounded-xl flex flex-wrap md:flex-nowrap gap-2 shadow-sm mb-6">
                 <a href="{{ route('operational.schedule', ['tab' => 'donasi']) }}" 
                    class="flex-1 text-center py-2.5 text-sm font-bold rounded-lg transition-all duration-200 {{ $activeTab === 'donasi' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100' }}">
                     🎁 Donasi Umum ({{ $donasiPrograms->count() }})
@@ -76,23 +79,98 @@
                    class="flex-1 text-center py-2.5 text-sm font-bold rounded-lg transition-all duration-200 {{ $activeTab === 'cinema' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100' }}">
                     🎬 Cinema Edukasi ({{ $cinemaPrograms->count() }})
                 </a>
+                <a href="{{ route('operational.schedule', ['tab' => 'reguler']) }}" 
+                   class="flex-1 text-center py-2.5 text-sm font-bold rounded-lg transition-all duration-200 {{ $activeTab === 'reguler' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100' }}">
+                    📋 Program Reguler ({{ $regulerPrograms->count() }})
+                </a>
             </div>
 
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                @if($activeTab === 'donasi')
-                    <div class="p-5 border-b border-slate-100 bg-slate-50/50">
-                        <h2 class="text-base font-bold text-slate-800">Daftar Agenda Kerja: Donasi Umum</h2>
-                    </div>
-                    
-                    <div class="p-6">
-                        @if($donasiPrograms->isEmpty())
-                            <div class="text-center py-12 text-slate-400 text-sm">
-                                <span class="text-3xl block mb-2">🎁</span>
-                                Belum ada database program untuk kategori Donasi Umum.
-                            </div>
-                        @else
-                            <div class="grid grid-cols-1 gap-6">
-                                @foreach($donasiPrograms as $program)
+                
+                @php
+                    if ($activeTab === 'podcast') {
+                        $currentPrograms = $podcastPrograms;
+                        $tabTitle = 'Program Podcast';
+                        $tabIcon = '🎙️';
+                    } elseif ($activeTab === 'cinema') {
+                        $currentPrograms = $cinemaPrograms;
+                        $tabTitle = 'Cinema Edukasi';
+                        $tabIcon = '🎬';
+                    } elseif ($activeTab === 'reguler') {
+                        $currentPrograms = $regulerPrograms;
+                        $tabTitle = 'Program Reguler';
+                        $tabIcon = '📋';
+                    } else {
+                        $currentPrograms = $donasiPrograms;
+                        $tabTitle = 'Donasi Umum';
+                        $tabIcon = '🎁';
+                    }
+                @endphp
+
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-base font-bold text-slate-800">Daftar Agenda Kerja: {{ $tabTitle }}</h2>
+                </div>
+                
+                <div class="p-6">
+                    @if($currentPrograms->isEmpty())
+                        <div class="text-center py-12 text-slate-400 text-sm">
+                            <span class="text-3xl block mb-2">{{ $tabIcon }}</span>
+                            Belum ada database program untuk kategori {{ $tabTitle }}.
+                        </div>
+                    @else
+                        <div class="grid grid-cols-1 gap-6">
+                            @foreach($currentPrograms as $program)
+                                
+                                @if($activeTab === 'reguler')
+                                    <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
+                                        <div class="space-y-3 flex-1">
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                @if($program->status === 'disetujui')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">🟢 Disetujui</span>
+                                                @elseif($program->status === 'dicairkan')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 uppercase border border-blue-200">💸 Dana Dicairkan</span>
+                                                @else
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">🏁 Selesai Lapangan</span>
+                                                @endif
+                                                <h3 class="text-lg font-bold text-slate-800">{{ $program->nama_program }}</h3>
+                                            </div>
+                                            <p class="text-xs text-slate-500 max-w-2xl leading-relaxed">{{ $program->rincian_detail ?? 'Tidak ada deskripsi tambahan.' }}</p>
+                                            
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs">
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Anggaran Alokasi</span>
+                                                    <span class="font-bold text-slate-700 block">Rp {{ number_format($program->nominal_diajukan, 0, ',', '.') }}</span>
+                                                </div>
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Target Penerima Manfaat</span>
+                                                    <span class="font-bold text-slate-600 block pt-0.5">{{ $program->penerima_manfaat }}</span>
+                                                </div>
+                                                <div class="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 text-slate-900">
+                                                    <span class="text-emerald-700 block font-bold uppercase text-[9px] tracking-wider">Tanggal Kerja Pelaksanaan</span>
+                                                    <span class="font-bold block pt-0.5">📅 {{ $program->tanggal_pelaksanaan ? \Carbon\Carbon::parse($program->tanggal_pelaksanaan)->translatedFormat('d F Y') : 'Belum Dijadwalkan' }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 flex flex-col gap-3 min-w-[260px]">
+                                            @if($program->status !== 'dilaporkan')
+                                                <form action="{{ route('operational.update-date', $program->id) }}" method="POST" class="space-y-1">
+                                                    @csrf
+                                                    <input type="hidden" name="is_reguler" value="true">
+                                                    <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Set / Ubah Tanggal Kerja</label>
+                                                    <div class="flex gap-2">
+                                                        <input type="date" name="execution_date" value="{{ $program->tanggal_pelaksanaan }}" class="p-2 border border-slate-200 rounded-lg text-xs w-full focus:outline-none focus:border-emerald-500" required>
+                                                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm shrink-0 cursor-pointer">Simpan</button>
+                                                    </div>
+                                                </form>
+                                            @else
+                                                <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center">
+                                                    <span class="text-xs font-bold text-emerald-800 block">🏆 PROGRAM SELESAI TERLAKSANA</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
                                     @php
                                         $percentage = $program->target_amount > 0 ? min(round(($program->current_amount / $program->target_amount) * 100), 100) : 0;
                                     @endphp
@@ -165,12 +243,13 @@
                                             @endif
                                         </div>
                                     </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                @endif
-                <!-- Tab lain disembunyikan untuk menjaga panjang kode -->
+                                @endif
+
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
             </div>
         </div>
     </div>

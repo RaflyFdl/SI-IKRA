@@ -8,6 +8,7 @@ use App\Http\Controllers\MemberDashboardController; // Tetap di-import untuk tab
 use App\Http\Controllers\PaymentSimulationController; // Controller simulasi pembayaran
 use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
 use App\Http\Controllers\PenyaluranEkstraController; // ✅ IMPORT CONTROLLER PENYALURAN BARU
+use App\Http\Controllers\PenyaluranRegulerController; // ✅ IMPORT CONTROLLER PENYALURAN REGULER BARU
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -72,7 +73,6 @@ Route::get('/dashboard/infak-ekstra', [ProgramController::class, 'memberIndex'])
 Route::get('/infak-ekstra/{id}', [ExtraProgramController::class, 'show'])->name('member.extra.show');
 Route::post('/infak-ekstra/{id}/checkout', [ExtraProgramController::class, 'checkout'])->name('member.extra.checkout');
 Route::get('/infak-ekstra/invoice/{transaction_id}', [ExtraProgramController::class, 'invoice'])->name('member.extra.invoice');
-Route::post('/infak-ekstra/simulasikan/{transaction_id}', [ExtraProgramController::class, 'simulatePayment'])->name('member.extra.simulate');
 
 Route::get('/dashboard/profil', [MemberDashboardController::class, 'profil'])->name('member.profil');
 
@@ -93,7 +93,8 @@ Route::get('/admin', [AuthController::class, 'adminDashboard'])->name('admin.das
 
 Route::post('/admin/approve/{id}', [AuthController::class, 'approveMember'])->name('admin.approve');
 
-Route::post('/admin/reject/{id}', [AuthController::class, 'rejectMember'])->name('admin.member.reject');
+// 🛠️ FIX EROR: Menambahkan rute penolakan pendaftaran berkas anggota baru oleh Admin
+Route::post('/admin/member/reject/{id}', [AuthController::class, 'rejectMember'])->name('admin.member.reject');
 
 // Kelola Program
 Route::get('/admin/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
@@ -115,11 +116,14 @@ Route::post('/keuangan/penyaluran-ekstra/reimburse/{pengajuanId}', [PenyaluranEk
 // 💰 ROUTE TAMBAHAN KEUANGAN: Memproses konfirmasi pencairan modal awal kerja (Upload Bukti Transfer)
 Route::post('/keuangan/penyaluran-ekstra/cairkan/{pengajuanId}', [PenyaluranEkstraController::class, 'prosesCairkanAwal'])->name('keuangan.cairkan.proses');
 
+// 💵 ROUTE BARU KEUANGAN (INFAK REGULER): Memproses unggah bukti transfer pencairan infak reguler
+Route::post('/keuangan/penyaluran-reguler/cairkan/{id}', [PenyaluranRegulerController::class, 'prosesCairkanKeuangan'])->name('keuangan.penyaluran-reguler.cairkan');
+
 
 // ==========================================
 // 4.5 JALUR KHUSUS OPERASIONAL
 // ==========================================
-Route::get('/operasional/dashboard', [AuthController::class, 'operationalDashboard'])->name('operational.dashboard');
+Route::get('/operasional/dashboard', [ProgramController::class, 'operationalDashboard'])->name('operational.dashboard');
 
 Route::get('/operasional/jadwal', [ProgramController::class, 'operationalSchedule'])->name('operational.schedule');
 
@@ -137,6 +141,27 @@ Route::get('/operasional/penyaluran-ekstra/laporan/{pengajuanId}', [PenyaluranEk
 // 🚀 ROUTE BARU OPERASIONAL: Menginput/menyimpan laporan nota pengeluaran belanja dana ekstra
 Route::post('/operasional/penyaluran-ekstra/laporan/{pengajuanId}', [PenyaluranEkstraController::class, 'simpanLaporan'])->name('operational.laporan.store');
 
+// 💳 ROUTE BARU OPERASIONAL: Mengelola Penyaluran Infak Reguler
+Route::get('/operasional/penyaluran-reguler', [PenyaluranRegulerController::class, 'indeksOperasional'])->name('operational.penyaluran-reguler.index');
+Route::post('/operasional/penyaluran-reguler/store', [PenyaluranRegulerController::class, 'simpanPengajuan'])->name('operational.penyaluran-reguler.store');
+
+// 📝 ROUTE BARU OPERASIONAL (INFAK REGULER): Form Input & Simpan Nota Belanja Kegiatan Reguler
+Route::get('/operasional/penyaluran-reguler/laporan/{id}', [PenyaluranRegulerController::class, 'showLaporanForm'])->name('operational.penyaluran-reguler.laporan.form');
+Route::post('/operasional/penyaluran-reguler/laporan/{id}', [PenyaluranRegulerController::class, 'simpanLaporan'])->name('operational.penyaluran-reguler.laporan.store');
+
+// 📅 ROUTE BARU OPERASIONAL (JSON API): Jalur data kalender dinamis untuk dashboard operasional
+Route::get('/operasional/calendar-events', [ProgramController::class, 'getCalendarEvents'])->name('operational.calendar.events');
+
+
+// ==========================================
+// 4.8 JALUR KHUSUS PEMBINA (TAMBAHAN BARU)
+// ==========================================
+// 👑 ROUTE BARU PEMBINA: Menampilkan halaman dashboard utama Pembina
+Route::get('/pembina/dashboard', [AuthController::class, 'pembinaDashboard'])->name('pembina.dashboard');
+
+// 👑 ROUTE BARU PEMBINA (INFAK REGULER): Menangani aksi setuju/tolak proposal reguler
+Route::post('/pembina/penyaluran-reguler/approve/{id}', [PenyaluranRegulerController::class, 'prosesApprovalPembina'])->name('pembina.penyaluran-reguler.approve');
+
 
 // ==========================================
 // 5. WEBHOOK GATEWAY XENDIT
@@ -149,3 +174,17 @@ Route::post('/webhook/xendit', [TransactionController::class, 'handleCallback'])
 // ==========================================
 Route::post('/simulate-payment/{memberId}', [PaymentSimulationController::class, 'simulateRegularPayment'])
     ->name('simulation.regular');
+
+
+// ==========================================
+// 7. JALUR BACKDOOR SIMULASI (UNTUK SIDANG)
+// ==========================================
+// 🚀 TINGGAL AKSES URL: localhost:8000/bayar-rahasia/NOMOR_VA_DI_LAYAR
+Route::get('/bayar-rahasia/{va_number}', [ExtraProgramController::class, 'backdoorSimulate'])
+    ->name('member.extra.backdoor');
+
+// 🔍 ROUTE AUTO-CHECK: Mengecek status transaksi secara real-time dari script Blade
+Route::get('/infak-ekstra/check-status/{transaction_id}', function($transaction_id) {
+    $trx = DB::table('transactions')->where('id', $transaction_id)->first();
+    return response()->json(['status' => $trx && $trx->payment_id ? 'lunas' : 'pending']);
+})->name('member.extra.check-status');

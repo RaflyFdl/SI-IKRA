@@ -18,14 +18,16 @@
                 <span class="bg-emerald-800 text-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-700">
                     Role: Staf Keuangan
                 </span>
-                <a href="/" class="text-sm font-medium text-white hover:text-emerald-200 underline transition-all">Logout</a>
+                <form action="{{ route('logout') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="text-sm font-medium text-white hover:text-emerald-200 underline transition-all bg-transparent border-0 cursor-pointer">Logout</button>
+                </form>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 py-10 space-y-8">
         
-        <!-- NAVIGASI TAB MENU 3 PILIHAN SINKRON -->
         <div class="flex border-b border-gray-200">
             <a href="#" class="py-3 px-6 font-bold text-sm text-[#0b6e3f] border-b-2 border-[#0b6e3f] transition-all">
                 💳 Infak Reguler (Bulanan)
@@ -82,7 +84,7 @@
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80 space-y-4">
             <div>
-                <h2 class="text-base font-bold text-gray-990 tracking-tight flex items-center gap-2">
+                <h2 class="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
                     <span>🏢</span> Logika Alokasi Aturan Dana IKRA (Khusus Infak Reguler)
                 </h2>
                 <p class="text-xs text-gray-500 mt-0.5">Pemisahan otomatis berdasarkan persentase 35% kebutuhan operasional internal kantor dan 65% dana siap salur program reguler.</p>
@@ -123,6 +125,75 @@
                     <div class="hidden sm:block text-slate-300">|</div>
                     <div>Siap Salur (65%): <strong class="text-emerald-700">Rp {{ number_format($siapSalurPerPeriode, 0, ',', '.') }}</strong></div>
                 </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 bg-amber-50/40">
+                <h2 class="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <span>💵</span> Permintaan Pencairan Dana Reguler (Validasi Pembina)
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">Daftar proposal penyaluran dari divisi operasional yang telah disetujui Pembina dan siap ditransfer.</p>
+            </div>
+            
+            <div class="p-6">
+                @if(!isset($pengajuanReguler) || $pengajuanReguler->isEmpty())
+                    <div class="text-center py-8 text-gray-400 text-sm">
+                        <span class="text-2xl block mb-1">🕊️</span>
+                        Belum ada proposal reguler disetujui yang menunggu pencairan.
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-gray-200 text-slate-500 text-xs font-bold uppercase">
+                                    <th class="py-3 px-4">Nama Program</th>
+                                    <th class="py-3 px-4">Target Penerima</th>
+                                    <th class="py-3 px-4">Nominal</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-center">Aksi Pencairan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+                                @foreach($pengajuanReguler as $p)
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="py-4 px-4 font-semibold text-gray-900">
+                                            {{ $p->nama_program }}
+                                            <span class="block text-[11px] font-normal text-gray-500 mt-0.5">{{ $p->rincian_detail }}</span>
+                                        </td>
+                                        <td class="py-4 px-4 text-gray-600 text-xs">{{ $p->penerima_manfaat }}</td>
+                                        <td class="py-4 px-4 font-bold text-indigo-700">Rp {{ number_format($p->nominal_diajukan, 0, ',', '.') }}</td>
+                                        <td class="py-4 px-4">
+                                            @if($p->status === 'disetujui')
+                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-50 text-blue-700 border border-blue-200 uppercase">Siap Cair</span>
+                                            @else
+                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">Selesai Ditransfer</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-4 px-4 w-64">
+                                            @if($p->status === 'disetujui')
+                                                <form action="{{ route('keuangan.penyaluran-reguler.cairkan', $p->id) }}" method="POST" enctype="multipart/form-data" class="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                                    @csrf
+                                                    <label class="text-[10px] font-bold text-gray-400 uppercase block">Upload Bukti Transfer:</label>
+                                                    <input type="file" name="bukti_transfer" required class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1.5 px-3 rounded shadow-sm transition-all cursor-pointer">
+                                                        Confirm Kirim Dana
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <div class="text-center">
+                                                    <a href="{{ asset('uploads/bukti_transfer/' . $p->bukti_transfer) }}" target="_blank" class="text-xs text-emerald-600 font-medium hover:underline flex items-center justify-center gap-1">
+                                                        👁️ Lihat Bukti Transfer
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
 

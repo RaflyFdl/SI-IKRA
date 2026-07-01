@@ -33,6 +33,11 @@
                         <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
                         <span>Pencairan Dana Ekstra</span>
                     </a>
+
+                    <a href="{{ route('operational.penyaluran-reguler.index') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.penyaluran-reguler.index') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-heart-circle-check w-5 text-center"></i>
+                        <span>Penyaluran Infak Reguler</span>
+                    </a>
                 </nav>
             </div>
 

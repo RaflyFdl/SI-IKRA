@@ -59,7 +59,26 @@
                 <p class="text-[11px] text-slate-400 mt-2">*Minimal infak adalah Rp 10.000</p>
             </div>
 
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold py-3.5 px-4 rounded-xl shadow transition-all duration-200 cursor-pointer text-center block">
+            <div>
+                <label for="bank_code" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Pilih Bank Pembayaran</label>
+                <div class="relative mt-1 rounded-xl shadow-sm">
+                    <select name="bank_code" id="bank_code" required 
+                            class="block w-full rounded-xl border-gray-200 px-4 py-3 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-emerald-500 bg-white">
+                        <option value="" disabled selected>-- Pilih Bank --</option>
+                        <option value="BCA">Bank Central Asia (BCA)</option>
+                        <option value="MANDIRI">Bank Mandiri</option>
+                        <option value="BRI">Bank Rakyat Indonesia (BRI)</option>
+                        <option value="BNI">Bank Negara Indonesia (BNI)</option>
+                        <option value="PERMATA">Bank Permata</option>
+                        <option value="MUAMALAT">Bank Muamalat (Syariah)</option>
+                    </select>
+                </div>
+                @error('bank_code')
+                    <p class="text-xs text-rose-600 font-medium mt-1.5">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold py-3.5 px-4 rounded-xl shadow transition-all duration-200 cursor-pointer text-center block mt-2">
                 Lanjut Pembayaran
             </button>
         </form>

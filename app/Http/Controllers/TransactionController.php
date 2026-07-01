@@ -7,6 +7,7 @@ use App\Models\ExtraProgram;
 use App\Models\Transaction; 
 use App\Models\DanaBackup; 
 use App\Models\PengajuanPencairanEkstra;
+use App\Models\PenyaluranReguler; // Tambahkan import Model PenyaluranReguler
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail; 
@@ -116,7 +117,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * 2. Menampilkan Halaman Dashboard Utama Bagian Keuangan
+     * 2. Menampilkan Halaman Dashboard Utama Bagian Keuangan (FIXED: Nama Tabel Tanpa S)
      */
     public function keuanganDashboard(Request $request)
     {
@@ -128,8 +129,15 @@ class TransactionController extends Controller
                             ->where('transaction_type', 'ekstra')
                             ->sum('amount') ?? 0;
 
+        // 🎯 FIX: Mengubah 'penyaluran_regulers' menjadi 'penyaluran_reguler' sesuai database asli Anda
+        $totalPenyaluranRegulerTerpakai = DB::table('penyaluran_reguler')
+                            ->whereIn('status', ['dicairkan', 'dilaporkan'])
+                            ->sum('nominal_diajukan') ?? 0;
+
         $operasionalReguler = $totalKeseluruhan * 0.35;
-        $siapSalurReguler   = $totalKeseluruhan * 0.65;
+        
+        // Potong porsi 65% dengan total pengeluaran rill yang sudah cair
+        $siapSalurReguler   = ($totalKeseluruhan * 0.65) - $totalPenyaluranRegulerTerpakai;
 
         $operasionalEkstra  = $totalEkstra * 0.35;
         $siapSalurEkstra    = $totalEkstra * 0.65;
@@ -143,8 +151,16 @@ class TransactionController extends Controller
                             ->where('periode', $periodeDipilih)
                             ->sum('amount') ?? 0;
 
+        // 🎯 FIX: Mengubah 'penyaluran_regulers' menjadi 'penyaluran_reguler' khusus periodik
+        $penyaluranRegulerPeriodeTerpakai = DB::table('penyaluran_reguler')
+                            ->where('periode_bulan', $periodeDipilih)
+                            ->whereIn('status', ['dicairkan', 'dilaporkan'])
+                            ->sum('nominal_diajukan') ?? 0;
+
         $operasionalPerPeriode = $totalPerPeriode * 0.35;
-        $siapSalurPerPeriode   = $totalPerPeriode * 0.65;
+        
+        // Potong porsi periodik dengan pengeluaran di periode bersangkutan
+        $siapSalurPerPeriode   = ($totalPerPeriode * 0.65) - $penyaluranRegulerPeriodeTerpakai;
 
         $daftarPeriode = DB::table('transactions')
                             ->where('transaction_type', 'reguler') 
@@ -165,6 +181,10 @@ class TransactionController extends Controller
         $riwayatTransaksi = $transactions;
         $totalDanaBackup = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])->sum('selisih') ?? 0;
 
+        $pengajuanReguler = PenyaluranReguler::whereIn('status', ['disetujui', 'dicairkan'])
+                                            ->orderBy('updated_at', 'desc')
+                                            ->get();
+
         return view('keuangan_dashboard', compact(
             'totalKeseluruhan', 
             'totalEkstra', 
@@ -180,7 +200,8 @@ class TransactionController extends Controller
             'totalKasOperasionalKantor',
             'totalDanaBackup',
             'operasionalPerPeriode',
-            'siapSalurPerPeriode'
+            'siapSalurPerPeriode',
+            'pengajuanReguler'
         ));
     }
 
@@ -201,34 +222,28 @@ class TransactionController extends Controller
         $operasionalEkstra = $totalEkstra * 0.35;
         $siapSalurEkstra   = $totalEkstra * 0.65;
 
-        // Memuat pengajuan yang berstatus pending
         $antreanPencairan = PengajuanPencairanEkstra::with('extraProgram')
                             ->where('status', 'PENDING')
                             ->get();
 
         $totalDanaBackup = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])->sum('selisih') ?? 0;
 
-        // Ambil riwayat dana backup beserta relasi program ekstranya
         $riwayatDanaBackup = DanaBackup::whereIn('sumber_dana', ['EKSTRA', 'ekstra'])
                                         ->with(['pengajuan.extraProgram']) 
                                         ->orderBy('created_at', 'desc')
                                         ->get();
 
-        // 🎯 FIX UTAMA: Query disesuaikan dengan struktur tabel asli 'laporan_penggunaan' & 'laporan_penggunaan_detail'
         foreach ($riwayatDanaBackup as $backup) {
             if ($backup->pengajuan) {
-                // 1. Cari record di tabel 'laporan_penggunaan' berdasarkan 'pengajuan_id'
                 $laporan = DB::table('laporan_penggunaan')
                     ->where('pengajuan_id', $backup->pengajuan->id)
                     ->first();
 
                 if ($laporan) {
-                    // 2. Jika laporan penggunaan ketemu, ambil seluruh item belanja dari 'laporan_penggunaan_detail'
                     $backup->pengajuan->items = DB::table('laporan_penggunaan_detail')
                         ->where('laporan_penggunaan_id', $laporan->id)
                         ->get();
                 } else {
-                    // Fallback array kosong jika belum ada rincian penggunaan yang diinput staf lapangan
                     $backup->pengajuan->items = collect([]);
                 }
             }
@@ -269,5 +284,37 @@ class TransactionController extends Controller
             'operasionalEkstra',
             'totalOperasionalGabungan'
         ));
+    }
+
+    /**
+     * 👑 5. PROSES CAIRKAN DANA PROPOSAL REGULER
+     */
+    public function cairkanPenyaluranReguler(Request $request, $id)
+    {
+        $request->validate([
+            'bukti_transfer' => 'required|image|mimes:jpeg,png,jpg,pdf|max:2048'
+        ]);
+
+        $pengajuan = PenyaluranReguler::findOrFail($id);
+
+        if ($request->hasFile('bukti_transfer')) {
+            $folderTujuan = public_path('uploads/bukti_transfer');
+            if (!file_exists($folderTujuan)) {
+                mkdir($folderTujuan, 0777, true);
+            }
+
+            $namaFile = time() . '_trf_' . $request->file('bukti_transfer')->getClientOriginalName();
+            $request->file('bukti_transfer')->move($folderTujuan, $namaFile);
+
+            $pengajuan->update([
+                'status' => 'dicairkan',
+                'bukti_transfer' => $namaFile
+            ]);
+
+            return redirect()->route('keuangan.dashboard')
+                ->with('success', 'Dana Berhasil Dicairkan dan Bukti Transfer Berhasil Disimpan!');
+        }
+
+        return back()->with('error', 'Gagal memproses file bukti transfer.');
     }
 }

@@ -113,7 +113,8 @@ class AuthController extends Controller
                 case 'operasional':
                     return redirect()->route('operational.dashboard');
                 case 'pembina':
-                    return redirect()->route('admin.dashboard');
+                    // ✅ DIUBAH: Sekarang mengarah ke route dashboard pembina sendiri
+                    return redirect()->route('pembina.dashboard');
             }
         }
 
@@ -243,5 +244,26 @@ class AuthController extends Controller
         if (!$staff) return redirect()->route('login');
 
         return view('operational.dashboard');
+    }
+
+    /**
+     * 👑 10. PEMBINA DASHBOARD (TAMBAHAN BARU)
+     * Mengatur hak akses masuk ke halaman dashboard utama Pembina
+     */
+    public function pembinaDashboard(Request $request)
+    {
+        $sessionEmail = session('logged_in_email');
+
+        $staff = Staff::where('email', $sessionEmail)->first();
+
+        if (!$staff || $staff->role !== 'pembina') {
+            return redirect()->route('login');
+        }
+
+        // Ambil data rencana penyaluran reguler yang butuh diverifikasi oleh Pembina
+        $pengajuanMasuk = \App\Models\PenyaluranReguler::orderBy('created_at', 'desc')->get();
+
+        // ✅ DIUBAH: Mengarah ke view di dalam folder resources/views/pembina/dashboard.blade.php
+        return view('pembina.dashboard', compact('staff', 'pengajuanMasuk'));
     }
 }
