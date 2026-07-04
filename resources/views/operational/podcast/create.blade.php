@@ -99,13 +99,20 @@
                     <h2 class="text-xs font-bold text-emerald-800 uppercase tracking-widest flex items-center gap-2">
                         <i class="fa-solid fa-money-bill-transfer text-emerald-600"></i> Pengajuan Anggaran Produksi
                     </h2>
-                    <div class="max-w-md">
-                        <label class="block text-xs font-bold text-emerald-900 mb-1.5">Total Nominal Dana yang Diajukan (Rp)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-3 text-sm font-bold text-emerald-700">Rp</span>
-                            <input type="number" name="amount_requested" class="w-full p-3 pl-12 bg-white border border-emerald-200 rounded-xl text-sm font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10" placeholder="0" required>
+                    <div class="grid grid-cols-1 gap-5">
+                        <div class="max-w-md">
+                            <label class="block text-xs font-bold text-emerald-900 mb-1.5">Total Nominal Dana yang Diajukan (Rp)</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-3 text-sm font-bold text-emerald-700">Rp</span>
+                                <input type="number" name="amount_requested" class="w-full p-3 pl-12 bg-white border border-emerald-200 rounded-xl text-sm font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10" placeholder="0" required>
+                            </div>
                         </div>
-                        <p class="text-[10px] text-emerald-600 mt-2 italic">*Estimasi biaya untuk narasumber, konsumsi tim, dan operasional lapangan.</p>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-900 mb-1.5">Rincian Penggunaan Dana</label>
+                            <textarea name="description" rows="3" class="w-full p-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/10" placeholder="Contoh: Konsumsi narasumber Rp 150.000, Transport tim Rp 100.000, Dekorasi panggung Rp 50.000" required></textarea>
+                            <p class="text-[10px] text-emerald-600 mt-2 italic">*Estimasi biaya untuk narasumber, konsumsi tim, dan operasional lapangan.</p>
+                        </div>
                     </div>
                 </div>
 

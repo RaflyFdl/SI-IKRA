@@ -10,6 +10,10 @@ use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
 use App\Http\Controllers\PenyaluranEkstraController; // ✅ IMPORT CONTROLLER PENYALURAN BARU
 use App\Http\Controllers\PenyaluranRegulerController; // ✅ IMPORT CONTROLLER PENYALURAN REGULER BARU
 use App\Http\Controllers\PodcastController; // ✅ IMPORT CONTROLLER PODCAST BARU
+use App\Http\Controllers\PenyaluranOperasionalController; // ✅ IMPORT BARU OPERASIONAL INTERNAL
+use App\Http\Controllers\PembinaOperasionalController; // ✅ IMPORT BARU PEMBINA REVIEW OPERASIONAL
+use App\Http\Controllers\KeuanganController; // ✅ IMPORT KEUANGAN CONTROLLER UNTUK VERIFIKASI NOTA
+use App\Http\Controllers\MemberController; // ✅ IMPORT BARU UNTUK KELOLA DATA MASTER ANGGOTA OLEH ADMIN
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
@@ -97,6 +101,12 @@ Route::post('/admin/approve/{id}', [AuthController::class, 'approveMember'])->na
 // 🛠️ FIX EROR: Menambahkan rute penolakan pendaftaran berkas anggota baru oleh Admin
 Route::post('/admin/member/reject/{id}', [AuthController::class, 'rejectMember'])->name('admin.member.reject');
 
+// 👥 ROUTE DATA MASTER ANGGOTA: Akses penuh admin untuk memanajemen data jemaah/anggota
+Route::get('/admin/member', [MemberController::class, 'index'])->name('admin.member.index');
+Route::post('/admin/member', [MemberController::class, 'store'])->name('admin.member.store');
+Route::put('/admin/member/{id}', [MemberController::class, 'update'])->name('admin.member.update');
+Route::delete('/admin/member/{id}', [MemberController::class, 'destroy'])->name('admin.member.destroy');
+
 // Kelola Program
 Route::get('/admin/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
 Route::post('/admin/programs', [ProgramController::class, 'store'])->name('admin.programs.store');
@@ -120,6 +130,12 @@ Route::post('/keuangan/penyaluran-ekstra/cairkan/{pengajuanId}', [PenyaluranEkst
 // 💵 ROUTE BARU KEUANGAN (INFAK REGULER): Memproses unggah bukti transfer pencairan infak reguler
 Route::post('/keuangan/penyaluran-reguler/cairkan/{id}', [PenyaluranRegulerController::class, 'prosesCairkanKeuangan'])->name('keuangan.penyaluran-reguler.cairkan');
 
+// 🏦 ROUTE BARU KEUANGAN (OPERASIONAL INTERNAL): Memproses konfirmasi pencairan dana operasional internal yayasan
+Route::post('/keuangan/operasional/cairkan/{id}', [TransactionController::class, 'prosesCairkanOperasional'])->name('keuangan.operasional.cairkan');
+
+// 🔄 ROUTE BARU KEUANGAN (OPERASIONAL INTERNAL): Disesuaikan ke KeuanganController untuk verifikasi nota & mutasi otomatis
+Route::post('/keuangan/operasional/konfirmasi-nota/{id}', [KeuanganController::class, 'konfirmasiNotaOperasional'])->name('keuangan.keuangan.operasional.konfirmasi-nota');
+
 
 // ==========================================
 // 4.5 JALUR KHUSUS OPERASIONAL
@@ -128,6 +144,7 @@ Route::get('/operasional/dashboard', [ProgramController::class, 'operationalDash
 
 Route::get('/operasional/jadwal', [ProgramController::class, 'operationalSchedule'])->name('operational.schedule');
 
+// Perbaikan penulisan route di bawah agar konsisten menggunakan string name route
 Route::post('/operasional/program/{id}/update-date', [ProgramController::class, 'updateExecutionDate'])->name('operational.update-date');
 
 Route::post('/operasional/program/{id}/complete', [ProgramController::class, 'completeProgram'])->name('operational.complete');
@@ -157,15 +174,33 @@ Route::get('/operasional/calendar-events', [ProgramController::class, 'getCalend
 Route::get('/operasional/podcast/create', [PodcastController::class, 'create'])->name('operational.podcast.create');
 Route::post('/operasional/podcast/store', [PodcastController::class, 'store'])->name('operational.podcast.store');
 
+// 🏢 ROUTE BARU OPERASIONAL: Penyaluran Dana Operasional Internal (Multi-Item)
+Route::get('/operasional/operasional', [PenyaluranOperasionalController::class, 'index'])->name('operational.operasional.index');
+// 🛠️ DUA ROUTE ALIAS DI BAWAH INI UNTUK MENCEGAH ROUTE NOT FOUND EXCEPTION PADA BANYAK FILE VIEW BLADE KREASI ANDA
+Route::get('/operasional/operasional-internal', [PenyaluranOperasionalController::class, 'index'])->name('operational.operasional-internal.index');
+
+// Ditambahkan rute create & store eksplisit agar cocok dengan folder views baru
+Route::get('/operasional/operasional/buat', [PenyaluranOperasionalController::class, 'create'])->name('operational.operasional.create');
+Route::post('/operasional/operasional/simpan', [PenyaluranOperasionalController::class, 'store'])->name('operational.operasional.store');
+
+// 📝 ROUTE TAMBAHAN BARU: Menyimpan berkas laporan realisasi belanja operasional internal dari tim operasional
+Route::post('/operasional/operasional/laporkan/{id}', [PenyaluranOperasionalController::class, 'laporkan'])->name('operational.operasional.laporkan');
+
 
 // ==========================================
-// 4.8 JALUR KHUSUS PEMBINA (TAMBAHAN BARU)
+// 4.8 JALUR KHUSUS PEMBINA
 // ==========================================
 // 👑 ROUTE BARU PEMBINA: Menampilkan halaman dashboard utama Pembina
 Route::get('/pembina/dashboard', [AuthController::class, 'pembinaDashboard'])->name('pembina.dashboard');
 
 // 👑 ROUTE BARU PEMBINA (INFAK REGULER): Menangani aksi setuju/tolak proposal reguler
 Route::post('/pembina/penyaluran-reguler/approve/{id}', [PenyaluranRegulerController::class, 'prosesApprovalPembina'])->name('pembina.penyaluran-reguler.approve');
+
+// 👑 ROUTE BARU PEMBINA (OPERASIONAL INTERNAL): Peninjauan Multi-Kebutuhan Internal
+Route::get('/pembina/operasional/review', [PembinaOperasionalController::class, 'index'])->name('pembina.operasional.index');
+// Ditambahkan alias route review agar tidak pecah saat pembina klik tautan menu navigasi
+Route::post('/pembina/operasional/approve/{id}', [PembinaOperasionalController::class, 'approve'])->name('pembina.operasional.approve');
+Route::post('/pembina/operasional/reject/{id}', [PembinaOperasionalController::class, 'reject'])->name('pembina.operasional.reject');
 
 
 // ==========================================

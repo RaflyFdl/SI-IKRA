@@ -19,6 +19,7 @@ class Podcast extends Model
         'airing_date',
         'amount_requested',
         'amount_approved',
+        'description', // 👈 Ditambahkan agar input rincian biaya baru bisa disimpan ke database
         'disbursement_proof',
         'status',
     ];
@@ -36,5 +37,15 @@ class Podcast extends Model
     public function notas()
     {
         return $this->hasMany(PodcastNota::class, 'podcast_id');
+    }
+
+    /**
+     * 🌟 JEMBATAN KEUANGAN: Menghubungkan data podcast ke antrean pencairan dana ekstra.
+     * Digunakan untuk mengecek apakah status pengajuan dana di bagian keuangan sudah DICAIRKAN / SELESAI.
+     */
+    public function pengairanKeuangan()
+    {
+        return $this->hasOne(\App\Models\PengajuanPencairanEkstra::class, 'nominal_diminta', 'amount_requested')
+                    ->orderBy('created_at', 'desc');
     }
 }

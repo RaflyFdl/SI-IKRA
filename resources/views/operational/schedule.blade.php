@@ -130,6 +130,7 @@
                                     <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
                                         <div class="space-y-3 flex-1">
                                             <div class="flex flex-wrap items-center gap-3">
+                                                {{-- 🛠️ PERBAIKAN LOGIK DI SINI --}}
                                                 @if($program->status === 'disetujui')
                                                     <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">🟢 Disetujui</span>
                                                 @elseif($program->status === 'dicairkan')
@@ -180,12 +181,12 @@
                                     <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
                                         <div class="space-y-3 flex-1">
                                             <div class="flex flex-wrap items-center gap-3">
-                                                @if($program->status === 'requested')
-                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">⏳ Pengajuan Dana</span>
-                                                @elseif($program->status === 'approved')
-                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 uppercase border border-blue-200">💸 Siap Produksi</span>
+                                                @if($program->pengairanKeuangan && $program->pengairanKeuangan->status === 'DICAIRKAN')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">💸 Dana Dicairkan</span>
+                                                @elseif($program->pengairanKeuangan && $program->pengairanKeuangan->status === 'SELESAI')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 uppercase border border-blue-200">🎬 Selesai Tayang</span>
                                                 @else
-                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">🎬 Selesai Tayang</span>
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">⏳ Pengajuan Dana</span>
                                                 @endif
                                                 <h3 class="text-lg font-bold text-slate-800">{{ $program->title }}</h3>
                                             </div>

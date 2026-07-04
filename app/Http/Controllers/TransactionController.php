@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\DanaBackup; 
 use App\Models\PengajuanPencairanEkstra;
 use App\Models\PenyaluranReguler; // Tambahkan import Model PenyaluranReguler
+use App\Models\OperationalRequest; // ✅ IMPORT MODEL OPERASIONAL BARU
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail; 
@@ -277,13 +278,89 @@ class TransactionController extends Controller
                             ->sum('amount') ?? 0;
         $operasionalEkstra = $totalEkstra * 0.35;
 
-        $totalOperasionalGabungan = $operasionalReguler + $operasionalEkstra;
+        // 1. Total alokasi kotor sebelum pemotongan pengeluaran operasional
+        $brankasAwalGabungan = $operasionalReguler + $operasionalEkstra;
+
+        // 2. Hitung total dana operasional internal rill yang sudah dicairkan / dilaporkan
+        $totalOperasionalTerpakai = OperationalRequest::whereIn('status_keuangan', ['dicairkan', 'dilaporkan'])
+                                    ->sum('total_amount') ?? 0;
+
+        // 🎯 LOGIKA DINAMIS REFUND & REIMBURSE OPERASIONAL:
+        // Menghitung uang sisa yang kembali (+) dan uang tekor penambah pengeluaran (-) ke dalam perhitungan saldo
+        $totalRefundMasuk = DB::table('operational_reports')->where('status_keuangan', 'selesai_refund')->sum('selisih') ?? 0;
+        $totalReimburseKeluar = DB::table('operational_reports')->where('status_keuangan', 'selesai_reimburse')->sum('selisih') ?? 0;
+
+        // 3. Saldo bersih otomatis berkurang & bertambah secara dinamis
+        $totalOperasionalGabungan = $brankasAwalGabungan - $totalOperasionalTerpakai + $totalRefundMasuk - abs($totalReimburseKeluar);
+
+        // 4. Ambil data antrean untuk ditampilkan di Halaman Keuangan
+        $antreanPencairan = OperationalRequest::with('items')
+                            ->where('status_pembina', 'approved_pembina')
+                            ->where('status_keuangan', 'pending')
+                            ->latest()
+                            ->get();
+
+        // 🎯 Ambil data antrean Verifikasi Bukti Nota Realisasi Belanja dari Tim Operasional Lapangan
+        $antreanNotaRealisasi = DB::table('operational_reports')
+                                ->join('operational_requests', 'operational_reports.operational_request_id', '=', 'operational_requests.id')
+                                ->where('operational_reports.status_keuangan', 'pending')
+                                ->select('operational_reports.*', 'operational_requests.title', 'operational_requests.total_amount as modal_awal')
+                                ->get();
+
+        $riwayatPencairan = OperationalRequest::with('items')
+                            ->where('status_keuangan', '!=', 'pending')
+                            ->latest()
+                            ->get();
 
         return view('keuangan.keuangan_operasional', compact(
             'operasionalReguler',
             'operasionalEkstra',
-            'totalOperasionalGabungan'
+            'totalOperasionalGabungan',
+            'antreanPencairan',
+            'antreanNotaRealisasi', // Kirim data antrean nota ke view
+            'riwayatPencairan'
         ));
+    }
+
+    /**
+     * 👑 4.5 PROSES CAIRKAN DANA OPERASIONAL INTERNAL KANTOR
+     */
+    public function prosesCairkanOperasional($id)
+    {
+        $operationalRequest = OperationalRequest::findOrFail($id);
+
+        // Ubah status kas menjadi dicairkan, otomatis memotong saldo di dashboard
+        $operationalRequest->update([
+            'status_keuangan' => 'dicairkan'
+        ]);
+
+        return redirect()->back()->with('success', 'Dana operasional "' . $operationalRequest->title . '" sebesar Rp ' . number_format($operationalRequest->total_amount, 0, ',', '.') . ' berhasil dicairkan!');
+    }
+
+    /**
+     * 🎯 4.6 PROSES KONFIRMASI NOTA REALISASI (REFUND / REIMBURSE OPERASIONAL)
+     */
+    public function konfirmasiNotaOperasional($id)
+    {
+        $report = DB::table('operational_reports')->where('id', $id)->first();
+        if (!$report) {
+            return redirect()->back()->with('error', 'Laporan realisasi nota tidak ditemukan.');
+        }
+
+        if ($report->selisih >= 0) {
+            // Kasus Kelebihan Uang: Sisa dana dikembalikan ke kas operasional (Refund)
+            DB::table('operational_reports')->where('id', $id)->update(['status_keuangan' => 'selesai_refund']);
+            $pesan = "Sisa dana pengembalian (refund) operasional berhasil diterima masuk kembali ke Brankas!";
+        } else {
+            // Kasus Kekurangan Uang: Sisa tekor dibayarkan oleh Bendahara (Reimburse)
+            DB::table('operational_reports')->where('id', $id)->update(['status_keuangan' => 'selesai_reimburse']);
+            $pesan = "Dana klaim tekor (reimburse) operasional berhasil dibayarkan kepada staf lapangan!";
+        }
+
+        // Kunci status master pengajuan menjadi dilaporkan penuh
+        OperationalRequest::where('id', $report->operational_request_id)->update(['status_keuangan' => 'dilaporkan']);
+
+        return redirect()->back()->with('success', $pesan);
     }
 
     /**

@@ -25,4 +25,4 @@ Artisan::command('inspire', function () {
  * Mengatur agar perintah 'infak:send-reminder' berjalan otomatis tanpa intervensi manusia
  * Dieksekusi setiap tanggal 1 awal bulan pada pukul 05:00 subuh.
  */
-Schedule::command('infak:send-reminder')->monthlyOn(1, '05:00');
+Schedule::command('infak:send-reminder')->monthlyOn(1, '08:00');

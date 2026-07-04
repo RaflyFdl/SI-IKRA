@@ -47,8 +47,13 @@
                     </a>
 
                     <a href="{{ route('operational.pencairan') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.pencairan') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
-                        <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
+                        <i class="fa-solid fa-money-check-dollar w-5 text-center"></i>
                         <span>Pencairan Dana Ekstra</span>
+                    </a>
+
+                    <a href="{{ route('operational.operasional.index') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.operasional.*') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-hand-holding-dollar w-5 text-center"></i>
+                        <span>Penyaluran Operasional</span>
                     </a>
 
                     <a href="{{ route('operational.penyaluran-reguler.index') }}" class="flex items-center space-x-3 {{ request()->routeIs('operational.penyaluran-reguler.index') ? 'bg-emerald-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
@@ -74,38 +79,6 @@
                     <p class="text-sm text-slate-500 mt-1">Pantau ringkasan statistik program kerja dan kelola timeline agenda eksekusi lapangan secara.</p>
                 </div>
             </div>
-<!--
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center space-x-4">
-                    <div class="bg-slate-100 p-3.5 rounded-xl text-xl">🎁</div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-bold block uppercase tracking-wider">Donasi Umum</span>
-                        <span class="text-xl font-black text-slate-800">{{ $totalDonasi }} Program</span>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center space-x-4">
-                    <div class="bg-purple-50 p-3.5 rounded-xl text-xl">🎙️</div>
-                    <div>
-                        <span class="text-xs text-purple-400 font-bold block uppercase tracking-wider">Podcast IKRA</span>
-                        <span class="text-xl font-black text-purple-900">{{ $totalPodcast }} Program</span>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center space-x-4">
-                    <div class="bg-blue-50 p-3.5 rounded-xl text-xl">🎬</div>
-                    <div>
-                        <span class="text-xs text-blue-400 font-bold block uppercase tracking-wider">Cinema Edukasi</span>
-                        <span class="text-xl font-black text-blue-900">{{ $totalCinema }} Program</span>
-                    </div>
-                </div>
-                <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm flex items-center space-x-4">
-                    <div class="bg-amber-500/10 text-amber-700 p-3.5 rounded-xl text-xl">⏳</div>
-                    <div>
-                        <span class="text-xs text-amber-600 font-bold block uppercase tracking-wider">Belum Terjadwal</span>
-                        <span class="text-xl font-black text-amber-800">{{ $jadwalPending }} Agenda</span>
-                    </div>
-                </div>
-            </div>
--->
 
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
                 <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
@@ -142,8 +115,8 @@
             var calendarEl = document.getElementById('calendar');
             
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: 'id', // Set bahasa ke Indonesia
-                initialView: 'dayGridMonth', // Tampilan standar bulanan
+                locale: 'id',
+                initialView: 'dayGridMonth',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -151,9 +124,8 @@
                 },
                 editable: false,
                 selectable: true,
-                events: "{{ route('operational.calendar.events') }}", // Panggil Route JSON yang sudah kita buat
+                events: "{{ route('operational.calendar.events') }}",
                 
-                // Aksi ketika nama agenda diklik oleh tim operasional
                 eventClick: function(info) {
                     var deskripsi = info.event.extendedProps.detail ? info.event.extendedProps.detail : 'Tidak ada deskripsi tambahan.';
                     alert(

@@ -16,14 +16,19 @@
                     <div class="bg-indigo-500 p-2 rounded-lg text-white font-bold">PB</div>
                     <div>
                         <h1 class="font-bold text-lg leading-tight">IKRA System</h1>
-                        <p class="text-xs text-slate-400">Dewan Pembina</p>
+                        <p class="text-xs text-slate-400">Pembina</p>
                     </div>
                 </div>
                 
                 <nav class="space-y-2">
-                    <a href="#" class="flex items-center space-x-3 bg-indigo-600 text-white font-medium p-3 rounded-lg transition">
+                    <a href="{{ route('pembina.dashboard') }}" class="flex items-center space-x-3 {{ request()->routeIs('pembina.dashboard') ? 'bg-indigo-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
                         <i class="fa-solid fa-file-signature w-5 text-center"></i>
                         <span>Persetujuan Program</span>
+                    </a>
+
+                    <a href="{{ route('pembina.operasional.review') }}" class="flex items-center space-x-3 {{ request()->routeIs('pembina.operasional.*') ? 'bg-purple-600 text-white font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} p-3 rounded-lg transition">
+                        <i class="fa-solid fa-building-user w-5 text-center"></i>
+                        <span>Persetujuan Operasional</span>
                     </a>
                 </nav>
             </div>
@@ -38,11 +43,8 @@
         </div>
 
         <div class="flex-1 p-10">
-            <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Selamat Datang, {{ $staff->nama }}</h1>
-                    <p class="text-sm text-slate-500 mt-1">Halaman khusus Dewan Pembina untuk memeriksa, memberikan catatan, dan menyetujui pengajuan anggaran penyaluran program.</p>
-                </div>
+            <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6">
+                <h1 class="text-2xl font-bold text-slate-900">Selamat Datang</h1>
             </div>
 
             @if(session('sukses'))
