@@ -50,7 +50,12 @@
                     <div class="p-5 space-y-4">
                         <div class="flex justify-between items-center text-[11px] font-bold">
                             <div>
-                                @if($program->end_date)
+                                @if(in_array($program->category, ['Podcast', 'Cinema Edukasi']))
+                                    {{-- Program berkelanjutan: tidak menampilkan countdown hari --}}
+                                    <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200/60 uppercase tracking-wider inline-flex items-center gap-1">
+                                        ♾️ Terbuka Terus
+                                    </span>
+                                @elseif($program->end_date)
                                     @if($daysLeft > 0)
                                         <span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-200/60 uppercase tracking-wider">
                                             ⏳ {{ ceil($daysLeft) }} Hari Lagi
@@ -66,10 +71,13 @@
                                     </span>
                                 @endif
                             </div>
-                            
-                            <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200/60">
-                                {{ $percentage }}% Terpenuhi
-                            </span>
+
+                            {{-- Persentase terpenuhi hanya untuk Donasi Umum --}}
+                            @if($program->category == 'Donasi Umum')
+                                <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200/60">
+                                    {{ $percentage }}% Terpenuhi
+                                </span>
+                            @endif
                         </div>
 
                         <div class="space-y-1">
@@ -79,7 +87,8 @@
                             </p>
                         </div>
 
-                        @if($program->execution_date)
+                        {{-- Tanggal pelaksanaan hanya ditampilkan untuk Donasi Umum (program momentum) --}}
+                        @if($program->execution_date && $program->category == 'Donasi Umum')
                             <div class="p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-xl flex items-center gap-2">
                                 <span class="text-sm">📅</span>
                                 <div class="text-[11px]">
@@ -89,22 +98,35 @@
                             </div>
                         @endif
 
-                        <div class="space-y-2 pt-2">
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
-                            </div>
-                            
-                            <div class="flex justify-between items-center text-xs pt-1">
-                                <div>
-                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">Terkumpul</span>
-                                    <strong class="text-slate-700 font-bold">Rp {{ number_format($program->current_amount, 0, ',', '.') }}</strong>
+                        {{-- Progress bar & target dana hanya untuk Donasi Umum --}}
+                        @if($program->category == 'Donasi Umum')
+                            <div class="space-y-2 pt-2">
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
                                 </div>
-                                <div class="text-right">
-                                    <span class="text-slate-400 block text-[10px] uppercase font-medium">Target Dana</span>
-                                    <strong class="text-slate-500 font-semibold">Rp {{ number_format($program->target_amount, 0, ',', '.') }}</strong>
+                                <div class="flex justify-between items-center text-xs pt-1">
+                                    <div>
+                                        <span class="text-slate-400 block text-[10px] uppercase font-medium">Terkumpul</span>
+                                        <strong class="text-slate-700 font-bold">Rp {{ number_format($program->current_amount, 0, ',', '.') }}</strong>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-slate-400 block text-[10px] uppercase font-medium">Target Dana</span>
+                                        <strong class="text-slate-500 font-semibold">Rp {{ number_format($program->target_amount, 0, ',', '.') }}</strong>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @else
+                            {{-- Podcast & Cinema: hanya tampilkan dana terkumpul, tanpa target --}}
+                            <div class="pt-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <div>
+                                        <span class="text-slate-400 block text-[10px] uppercase font-medium">Dana Terkumpul</span>
+                                        <strong class="text-emerald-700 font-bold">Rp {{ number_format($program->current_amount, 0, ',', '.') }}</strong>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 italic">Tidak ada target</span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

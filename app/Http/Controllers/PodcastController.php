@@ -14,7 +14,10 @@ class PodcastController extends Controller
      */
     public function create()
     {
-        return view('operational.podcast.create'); 
+        $programPodcast = ExtraProgram::where('name', 'LIKE', '%podcast%')->first();
+        $danaTersedia = $programPodcast ? $programPodcast->dana_bersih_ekstra : 0;
+        $busyDates = ExtraProgram::getBusyDates();
+        return view('operational.podcast.create', compact('danaTersedia', 'busyDates')); 
     }
 
     /**
@@ -35,11 +38,18 @@ class PodcastController extends Controller
         ]);
 
         // 2. Cari ID Program Penggalangan Dana Podcast di tabel extra_programs
-        // Kita cari program yang namanya mengandung kata 'podcast' (insensitf huruf besar/kecil)
         $programPodcast = ExtraProgram::where('name', 'LIKE', '%podcast%')->first();
+        
+        if (!$programPodcast) {
+            return redirect()->back()->withInput()->with('error', 'Program penggalangan dana Podcast tidak ditemukan atau belum aktif di database.');
+        }
 
-        // Antisipasi jika nama program podcast di database Anda berbeda, ambil ID pertama atau default 1
-        $programId = $programPodcast ? $programPodcast->id : 1; 
+        // Validasi Saldo: Bandingkan nominal pengajuan dengan dana bersih terkumpul (65%)
+        if ($validated['amount_requested'] > $programPodcast->dana_bersih_ekstra) {
+            return redirect()->back()->withInput()->with('error', 'Gagal mengajukan! Permintaan anggaran (Rp ' . number_format($validated['amount_requested'], 0, ',', '.') . ') melebihi ketersediaan dana bersih terkumpul program (Rp ' . number_format($programPodcast->dana_bersih_ekstra, 0, ',', '.') . ').');
+        }
+
+        $programId = $programPodcast->id; 
 
         // 3. Ambil ID staff operasional yang sedang login (aman untuk testing)
         $staffId = auth()->id() ?? (auth()->user()?->id ?? 1);

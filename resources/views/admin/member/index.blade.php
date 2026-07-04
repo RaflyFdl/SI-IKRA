@@ -62,6 +62,23 @@
             </div>
         @endif
 
+        @if(session('warning'))
+            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> {{ session('warning') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm shadow-sm">
+                <p class="font-bold flex items-center gap-2 mb-2"><i class="fa-solid fa-circle-xmark"></i> Terdapat kesalahan pada form:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -217,7 +234,7 @@
                 <h5 class="font-bold">➕ Tambah Anggota Baru (Manual)</h5>
                 <button onclick="toggleModal('addMemberModal')" class="text-white/80 hover:text-white text-xl">&times;</button>
             </div>
-            <form action="{{ route('admin.member.store') }}" method="POST" class="p-6 space-y-4">
+            <form action="{{ route('admin.member.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Lengkap:</label>
@@ -234,6 +251,16 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alamat Email:</label>
                     <input type="email" name="email" placeholder="contoh@domain.com" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-slate-900 text-slate-800" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bukti Pendukung <span class="text-slate-400 normal-case font-normal">(opsional)</span>:</label>
+                    <input type="file" name="bukti_pendukung" accept="image/jpeg,image/png,image/jpg,application/pdf" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-slate-900 text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200">
+                    <p class="text-xs text-slate-400 mt-1">Format: JPG, PNG, atau PDF. Boleh dikosongkan.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password Akun:</label>
+                    <input type="password" name="password" placeholder="Minimal 6 karakter" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-slate-900 text-slate-800" required>
+                    <p class="text-xs text-slate-400 mt-1">Password ini akan digunakan anggota untuk login.</p>
                 </div>
                 <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
                     <button type="button" onclick="toggleModal('addMemberModal')" class="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Batal</button>

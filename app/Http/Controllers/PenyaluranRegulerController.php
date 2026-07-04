@@ -45,13 +45,16 @@ class PenyaluranRegulerController extends Controller
             array_unshift($daftarPeriode, now()->format('Y-m'));
         }
 
+        $busyDates = \App\Models\ExtraProgram::getBusyDates();
+
         // ✅ KITA UBAH DISINI: Dari 'operasional' menjadi 'operational' sesuai nama folder sistem kamu
         return view('operational.penyaluran_reguler.index', compact(
             'semuaPengajuan',
             'periodeDipilih',
             'sisaDanaSiapSalur',
             'totalMasukPeriode',
-            'daftarPeriode'
+            'daftarPeriode',
+            'busyDates'
         ));
     }
 

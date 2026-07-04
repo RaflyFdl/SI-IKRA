@@ -17,14 +17,23 @@ class PenyaluranEkstraController extends Controller
      */
     public function pencairanEkstra()
     {
-        // 1. Ambil program yang BELUM PERNAH diajukan pencairan sama sekali
-        $programs = ExtraProgram::whereNotExists(function ($query) {
-            $query->select(DB::raw(1))
-                  ->from('pengajuan_pencairan_ekstra') 
-                  ->whereRaw('pengajuan_pencairan_ekstra.extra_program_id = extra_programs.id');
-        })->get();
+        // 1. Donasi Umum: hanya tampil jika BELUM PERNAH diajukan pencairan (program 1 kali)
+        $donasiPrograms = ExtraProgram::where('category', 'Donasi Umum')
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                      ->from('pengajuan_pencairan_ekstra')
+                      ->whereRaw('pengajuan_pencairan_ekstra.extra_program_id = extra_programs.id');
+            })->get();
 
-        // 2. 🚀 AMBIL DATA RIWAYAT STATUS PENCAIRAN UNTUK MONITORING OPERASIONAL
+        // 2. Podcast & Cinema Edukasi: SELALU tampil (program ongoing yang terus butuh pencairan)
+        $ongoingPrograms = ExtraProgram::whereIn('category', ['Podcast', 'Cinema Edukasi'])
+            ->where('status', 'active')
+            ->get();
+
+        // Gabungkan keduanya menjadi satu koleksi
+        $programs = $donasiPrograms->merge($ongoingPrograms);
+
+        // 3. Ambil riwayat semua pengajuan untuk monitoring operasional
         $riwayatPengajuan = PengajuanPencairanEkstra::with('extraProgram')
                             ->orderBy('created_at', 'desc')
                             ->get();

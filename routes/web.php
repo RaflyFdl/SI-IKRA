@@ -10,6 +10,7 @@ use App\Http\Controllers\ExtraProgramController; // ✅ IMPORT CONTROLLER BARU
 use App\Http\Controllers\PenyaluranEkstraController; // ✅ IMPORT CONTROLLER PENYALURAN BARU
 use App\Http\Controllers\PenyaluranRegulerController; // ✅ IMPORT CONTROLLER PENYALURAN REGULER BARU
 use App\Http\Controllers\PodcastController; // ✅ IMPORT CONTROLLER PODCAST BARU
+use App\Http\Controllers\CinemaEdukasiController; // ✅ IMPORT CONTROLLER CINEMA BARU
 use App\Http\Controllers\PenyaluranOperasionalController; // ✅ IMPORT BARU OPERASIONAL INTERNAL
 use App\Http\Controllers\PembinaOperasionalController; // ✅ IMPORT BARU PEMBINA REVIEW OPERASIONAL
 use App\Http\Controllers\KeuanganController; // ✅ IMPORT KEUANGAN CONTROLLER UNTUK VERIFIKASI NOTA
@@ -173,6 +174,10 @@ Route::get('/operasional/calendar-events', [ProgramController::class, 'getCalend
 // 🎙️ ROUTE BARU OPERASIONAL (PODCAST SYSTEM): Modul Kreatif & Pengajuan Dana Konten
 Route::get('/operasional/podcast/create', [PodcastController::class, 'create'])->name('operational.podcast.create');
 Route::post('/operasional/podcast/store', [PodcastController::class, 'store'])->name('operational.podcast.store');
+
+// 🎬 ROUTE BARU OPERASIONAL (CINEMA EDUSKASI SYSTEM): Modul Kreatif & Pengajuan Dana Kegiatan
+Route::get('/operasional/cinema/create', [CinemaEdukasiController::class, 'create'])->name('operational.cinema.create');
+Route::post('/operasional/cinema/store', [CinemaEdukasiController::class, 'store'])->name('operational.cinema.store');
 
 // 🏢 ROUTE BARU OPERASIONAL: Penyaluran Dana Operasional Internal (Multi-Item)
 Route::get('/operasional/operasional', [PenyaluranOperasionalController::class, 'index'])->name('operational.operasional.index');

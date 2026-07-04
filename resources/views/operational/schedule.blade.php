@@ -62,6 +62,10 @@
                     <a href="{{ route('operational.podcast.create') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-plus"></i> Buat Jadwal Podcast
                     </a>
+                @elseif($activeTab === 'cinema')
+                    <a href="{{ route('operational.cinema.create') }}" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Buat Jadwal Cinema
+                    </a>
                 @endif
             </div>
 
@@ -218,7 +222,50 @@
                                         </div>
                                     </div>
 
+                                @elseif($activeTab === 'cinema')
+                                    {{-- Kartu Cinema Edukasi (dari tabel cinema_edukasi) --}}
+                                    <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition duration-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white shadow-sm">
+                                        <div class="space-y-3 flex-1">
+                                            <div class="flex flex-wrap items-center gap-3">
+                                                @if($program->status === 'requested')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 uppercase border border-amber-200">⏳ Pengajuan Dana</span>
+                                                @elseif($program->status === 'dicairkan')
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-purple-50 text-purple-700 uppercase border border-purple-200">💸 Dana Dicairkan</span>
+                                                @else
+                                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 uppercase border border-emerald-200">🎬 Selesai</span>
+                                                @endif
+                                                <h3 class="text-lg font-bold text-slate-800">{{ $program->nama_materi }}</h3>
+                                            </div>
+                                            <p class="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                                                <strong class="text-slate-700">Rincian:</strong> {{ $program->description }}
+                                            </p>
+
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 text-xs">
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Pengajar</span>
+                                                    <span class="font-bold text-slate-700 block">{{ $program->pengajar }}</span>
+                                                </div>
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Penerima Manfaat</span>
+                                                    <span class="font-bold text-slate-700 block">{{ $program->penerima_manfaat }}</span>
+                                                </div>
+                                                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                                    <span class="text-slate-400 block font-medium uppercase text-[9px] tracking-wider">Estimasi Anggaran</span>
+                                                    <span class="font-bold text-purple-600 block">Rp {{ number_format($program->amount_requested, 0, ',', '.') }}</span>
+                                                </div>
+                                                <div class="bg-purple-50/50 p-2.5 rounded-lg border border-purple-100 text-slate-900">
+                                                    <span class="text-purple-700 block font-bold uppercase text-[9px] tracking-wider">Jadwal Kegiatan</span>
+                                                    <span class="font-bold block pt-0.5">🎬 {{ $program->jadwal_kegiatan ? $program->jadwal_kegiatan->translatedFormat('d M Y - H:i') : '-' }} WIB</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 text-right text-xs text-slate-400">
+                                            Dibuat: {{ $program->created_at->translatedFormat('d M Y') }}
+                                        </div>
+                                    </div>
+
                                 @else
+                                    {{-- Kartu Donasi Umum --}}
                                     @php
                                         $percentage = $program->target_amount > 0 ? min(round(($program->current_amount / $program->target_amount) * 100), 100) : 0;
                                     @endphp

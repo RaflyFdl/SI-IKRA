@@ -123,7 +123,10 @@
 
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Pelaksanaan</label>
-                            <input type="date" name="tanggal_pelaksanaan" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium">
+                            <input type="date" id="tanggalPelaksanaanInput" name="tanggal_pelaksanaan" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium">
+                            <p id="date_error_message" class="text-[11px] text-rose-600 font-bold mt-1.5 hidden flex items-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Jadwal bentrok! Tanggal ini sudah digunakan program lain.
+                            </p>
                         </div>
 
                         <div>
@@ -131,7 +134,7 @@
                             <textarea name="rincian_detail" rows="4" required placeholder="Tuliskan rincian detail belanja..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"></textarea>
                         </div>
 
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-lg shadow-sm transition cursor-pointer">
+                        <button type="submit" id="submit_button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-lg shadow-sm transition cursor-pointer">
                             Kirim Pengajuan Ke Pembina
                         </button>
                     </form>
@@ -201,5 +204,40 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById("tanggalPelaksanaanInput");
+            const dateErrorMessage = document.getElementById("date_error_message");
+            const submitBtn = document.getElementById("submit_button");
+            
+            const busyDates = @json($busyDates ?? []);
+
+            function validateDate() {
+                if (dateInput.value) {
+                    const selectedDate = dateInput.value; // Format: YYYY-MM-DD (date input returns YYYY-MM-DD)
+
+                    if (busyDates.includes(selectedDate)) {
+                        dateErrorMessage.classList.remove("hidden");
+                        dateInput.classList.remove("border-slate-200", "focus:border-emerald-600");
+                        dateInput.classList.add("border-rose-400", "focus:border-rose-500", "bg-rose-50/30");
+                        
+                        submitBtn.disabled = true;
+                        submitBtn.classList.remove("bg-emerald-600", "hover:bg-emerald-700", "cursor-pointer");
+                        submitBtn.classList.add("bg-slate-300", "text-slate-500", "cursor-not-allowed");
+                    } else {
+                        dateErrorMessage.classList.add("hidden");
+                        dateInput.classList.remove("border-rose-400", "focus:border-rose-500", "bg-rose-50/30");
+                        dateInput.classList.add("border-slate-200", "focus:border-emerald-600");
+                        
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove("bg-slate-300", "text-slate-500", "cursor-not-allowed");
+                        submitBtn.classList.add("bg-emerald-600", "hover:bg-emerald-700", "cursor-pointer");
+                    }
+                }
+            }
+
+            dateInput.addEventListener("change", validateDate);
+        });
+    </script>
 </body>
 </html>

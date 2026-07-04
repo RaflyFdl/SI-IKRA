@@ -113,10 +113,13 @@
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tanggal Pelaksanaan</label>
                                 <input type="date" id="executionDateInput" name="execution_date" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900 text-slate-800">
+                                <p id="date_error_message" class="text-[11px] text-rose-600 font-bold mt-1 hidden">
+                                    ⚠️ Jadwal bentrok! Tanggal ini sudah digunakan program lain.
+                                </p>
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-sm py-3 rounded-xl transition shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer">
+                        <button type="submit" id="submitButton" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-sm py-3 rounded-xl transition shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-key"></i> Simpan & Buat VA Otomatis
                         </button>
                     </div>
@@ -148,14 +151,16 @@
                                                     {{ $program->category ?? 'Donasi Umum' }}
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">
-                                                    @if($program->end_date)
+                                                    @if(in_array($program->category, ['Podcast', 'Cinema Edukasi']))
+                                                        ♾️ Terbuka Terus
+                                                    @elseif($program->end_date)
                                                         Hingga: {{ \Carbon\Carbon::parse($program->end_date)->format('d M Y') }}
                                                     @else
                                                         Batas Waktu: Terbuka Terus
                                                     @endif
                                                 </span>
                                             </div>
-                                            @if($program->execution_date)
+                                            @if($program->execution_date && $program->category == 'Donasi Umum')
                                                 <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                                                     📅 Pelaksanaan: {{ \Carbon\Carbon::parse($program->execution_date)->format('d M Y') }}
                                                 </span>
@@ -163,7 +168,9 @@
                                         </div>
                                     </td>
                                     <td class="p-4 font-semibold text-slate-600">
-                                        @if($program->target_amount)
+                                        @if(in_array($program->category, ['Podcast', 'Cinema Edukasi']))
+                                            <span class="text-slate-400 italic text-xs font-normal">Tidak ada target</span>
+                                        @elseif($program->target_amount)
                                             Rp {{ number_format($program->target_amount, 0, ',', '.') }}
                                         @else
                                             Tidak Terbatas
@@ -201,6 +208,12 @@
             const targetAmountInput = document.getElementById("targetAmountInput");
             const endDateInput = document.getElementById("endDateInput");
             const executionDateInput = document.getElementById("executionDateInput");
+            
+            const dateErrorMessage = document.getElementById("date_error_message");
+            const submitButton = document.getElementById("submitButton");
+
+            // Ambil daftar tanggal sibuk dari server
+            const busyDates = @json($busyDates ?? []);
 
             function adjustFormFields() {
                 if (categorySelect.value === "Donasi Umum") {
@@ -218,9 +231,42 @@
                     endDateInput.value = "";
                     executionDateInput.value = "";
                 }
+                checkDateConflict();
+            }
+
+            function checkDateConflict() {
+                // Hanya check jika kategori Donasi Umum dan ada tanggal yang diisi
+                if (categorySelect.value === "Donasi Umum" && executionDateInput.value) {
+                    const selectedDate = executionDateInput.value; // Format: YYYY-MM-DD
+                    
+                    if (busyDates.includes(selectedDate)) {
+                        dateErrorMessage.classList.remove("hidden");
+                        executionDateInput.classList.remove("border-slate-200", "focus:border-slate-900");
+                        executionDateInput.classList.add("border-rose-400", "bg-rose-50/30", "focus:border-rose-500");
+                        
+                        submitButton.disabled = true;
+                        submitButton.classList.remove("bg-[#111827]", "hover:bg-slate-800", "cursor-pointer");
+                        submitButton.classList.add("bg-slate-300", "text-slate-500", "cursor-not-allowed");
+                    } else {
+                        clearConflict();
+                    }
+                } else {
+                    clearConflict();
+                }
+            }
+
+            function clearConflict() {
+                dateErrorMessage.classList.add("hidden");
+                executionDateInput.classList.remove("border-rose-400", "bg-rose-50/30", "focus:border-rose-500");
+                executionDateInput.classList.add("border-slate-200", "focus:border-slate-900");
+                
+                submitButton.disabled = false;
+                submitButton.classList.remove("bg-slate-300", "text-slate-500", "cursor-not-allowed");
+                submitButton.classList.add("bg-[#111827]", "hover:bg-slate-800", "cursor-pointer");
             }
 
             categorySelect.addEventListener("change", adjustFormFields);
+            executionDateInput.addEventListener("input", checkDateConflict);
             adjustFormFields();
         });
     </script>
