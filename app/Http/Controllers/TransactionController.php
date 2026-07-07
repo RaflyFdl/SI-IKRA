@@ -73,9 +73,13 @@ class TransactionController extends Controller
                     $program = DB::table('extra_programs')->where('id', $programId)->first();
                     $member  = DB::table('members')->where('id', $userId)->first(); 
 
-                    if ($member && !empty($member->email)) {
-                        $namaProg = $program->name ?? 'Program Ekstra';
-                        Mail::to($member->email)->send(new PembayaranEkstraBerhasilMail($transaction, $namaProg));
+                    try {
+                        if ($member && !empty($member->email)) {
+                            $namaProg = $program->name ?? 'Program Ekstra';
+                            Mail::to($member->email)->send(new PembayaranEkstraBerhasilMail($transaction, $namaProg));
+                        }
+                    } catch (\Exception $mailEx) {
+                        Log::warning('Webhook memproses transaksi ekstra sukses, namun gagal mengirim email: ' . $mailEx->getMessage());
                     }
                 });
 

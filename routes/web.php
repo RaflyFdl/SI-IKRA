@@ -203,6 +203,7 @@ Route::post('/pembina/penyaluran-reguler/approve/{id}', [PenyaluranRegulerContro
 
 // 👑 ROUTE BARU PEMBINA (OPERASIONAL INTERNAL): Peninjauan Multi-Kebutuhan Internal
 Route::get('/pembina/operasional/review', [PembinaOperasionalController::class, 'index'])->name('pembina.operasional.index');
+Route::get('/pembina/operasional/review', [PembinaOperasionalController::class, 'index'])->name('pembina.operasional.review');
 // Ditambahkan alias route review agar tidak pecah saat pembina klik tautan menu navigasi
 Route::post('/pembina/operasional/approve/{id}', [PembinaOperasionalController::class, 'approve'])->name('pembina.operasional.approve');
 Route::post('/pembina/operasional/reject/{id}', [PembinaOperasionalController::class, 'reject'])->name('pembina.operasional.reject');
@@ -233,3 +234,11 @@ Route::get('/infak-ekstra/check-status/{transaction_id}', function($transaction_
     $trx = DB::table('transactions')->where('id', $transaction_id)->first();
     return response()->json(['status' => $trx && $trx->payment_id ? 'lunas' : 'pending']);
 })->name('member.extra.check-status');
+
+
+// ==========================================
+// 8. MOCK ATM & M-BANKING SIMULATOR (KHUSUS SIMULASI)
+// ==========================================
+Route::get('/simulator', [PaymentSimulationController::class, 'showSimulator'])->name('simulator.index');
+Route::get('/simulator/search-va', [PaymentSimulationController::class, 'searchVa'])->name('simulator.search');
+Route::post('/simulator/pay', [PaymentSimulationController::class, 'processPayment'])->name('simulator.pay');

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendaftaran Anggota - SI Infak IKRA Padjadjaran</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #f4f6f9; }
         .card-register { border-top: 5px solid #006644; } /* Warna hijau khas islami/Muamalat */
@@ -25,10 +26,34 @@
                     <hr>
 
                     @if(session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <!-- Modal Sukses Pendaftaran -->
+                        <div class="modal fade" id="successRegisterModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="successRegisterModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                                    <div class="modal-body text-center p-5">
+                                        <div class="mb-4">
+                                            <span class="display-3 text-success"><i class="fa-solid fa-circle-check animate-pulse"></i></span>
+                                        </div>
+                                        <h4 class="fw-bold text-success mb-3">Pendaftaran Berhasil!</h4>
+                                        <p class="text-muted text-sm mb-4 leading-relaxed">
+                                            Akun Anda telah berhasil dibuat. Silakan lakukan <strong>verifikasi akun melalui email Anda</strong> terlebih dahulu sebelum dapat masuk ke sistem.
+                                        </p>
+                                        <div class="d-grid">
+                                            <a href="{{ url('/') }}" class="btn btn-success btn-lg" style="border-radius: 12px; background-color: #006644; border-color: #006644; font-size: 15px; font-weight: bold;">
+                                                <i class="fa-solid fa-house me-2"></i> Kembali ke Beranda
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                var myModal = new bootstrap.Modal(document.getElementById('successRegisterModal'), {});
+                                myModal.show();
+                            });
+                        </script>
                     @endif
 
                     @if ($errors->any())

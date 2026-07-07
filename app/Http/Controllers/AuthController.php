@@ -182,7 +182,7 @@ class AuthController extends Controller
         $nomorUrut = str_pad($member->id, 4, '0', STR_PAD_LEFT);
         $noVaKustom = "808701002016" . $nomorUrut;
 
-        $apiKey = env('XENDIT_SECRET_KEY');
+        $apiKey = config('services.xendit.secret_key');
 
         $response = Http::withoutVerifying()
             ->withBasicAuth($apiKey, '')
