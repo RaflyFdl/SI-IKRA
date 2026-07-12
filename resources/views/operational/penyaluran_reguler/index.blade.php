@@ -102,18 +102,13 @@
                         <p class="text-xs text-slate-400 mt-0.5">Kirim berkas ke Pembina untuk mendapatkan pengesahan sistem.</p>
                     </div>
                     
-                    <form action="{{ route('operational.penyaluran-reguler.store') }}" method="POST" class="space-y-4">
+                    <form action="{{ route('operational.penyaluran-reguler.store') }}" method="POST" class="space-y-4" id="form-pengajuan-reguler">
                         @csrf
                         <input type="hidden" name="periode_bulan" value="{{ $periodeDipilih }}">
 
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Program Kerja</label>
                             <input type="text" name="nama_program" required placeholder="Contoh: Santunan Beras Yatim Dhuafa" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nominal Yang Dibutuhkan</label>
-                            <input type="number" name="nominal_diajukan" max="{{ $sisaDanaSiapSalur }}" required placeholder="Maksimal Rp {{ number_format($sisaDanaSiapSalur, 0, '', '') }}" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 font-mono font-bold text-emerald-700 focus:outline-none focus:border-emerald-600">
                         </div>
 
                         <div>
@@ -129,10 +124,44 @@
                             </p>
                         </div>
 
+                        {{-- RINCIAN KEBUTUHAN DANA DINAMIS --}}
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Rincian Anggaran Detail</label>
-                            <textarea name="rincian_detail" rows="4" required placeholder="Tuliskan rincian detail belanja..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"></textarea>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase">Rincian Kebutuhan Dana</label>
+                                <button type="button" id="btn-tambah-item" onclick="tambahBaris()" class="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition cursor-pointer">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> Tambah Baris
+                                </button>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                                <table class="w-full text-xs" id="tabel-kebutuhan">
+                                    <thead class="bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                                        <tr>
+                                            <th class="py-2.5 px-3 text-left w-[35%]">Nama Kebutuhan</th>
+                                            <th class="py-2.5 px-2 text-center w-[10%]">Qty</th>
+                                            <th class="py-2.5 px-2 text-center w-[15%]">Satuan</th>
+                                            <th class="py-2.5 px-2 text-right w-[30%]">Harga (Rp)</th>
+                                            <th class="py-2.5 px-2 text-center w-[10%]"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-kebutuhan" class="divide-y divide-slate-100">
+                                        {{-- Baris diisi oleh JavaScript --}}
+                                    </tbody>
+                                    <tfoot class="bg-emerald-50 border-t-2 border-emerald-200">
+                                        <tr>
+                                            <td colspan="3" class="py-2.5 px-3 font-bold text-emerald-800 uppercase text-[10px] tracking-wider">Total Anggaran Diajukan</td>
+                                            <td class="py-2.5 px-2 font-black text-emerald-700 text-right font-mono" id="total-display">Rp 0</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1.5">Total anggaran di atas akan otomatis menjadi nominal yang diajukan.</p>
                         </div>
+
+                        {{-- Hidden input untuk menyimpan data JSON rincian & total --}}
+                        <input type="hidden" name="rincian_detail" id="input-rincian-json">
+                        <input type="number" name="nominal_diajukan" id="input-nominal-hidden" max="{{ $sisaDanaSiapSalur }}" readonly style="display:none">
 
                         <button type="submit" id="submit_button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-lg shadow-sm transition cursor-pointer">
                             Kirim Pengajuan Ke Pembina
@@ -205,6 +234,97 @@
     </div>
 
     <script>
+        // =============================================
+        // LOGIKA RINCIAN KEBUTUHAN DANA DINAMIS
+        // =============================================
+        let barisCounter = 0;
+
+        function formatRupiah(angka) {
+            if (!angka || isNaN(angka)) return 'Rp 0';
+            return 'Rp ' + parseInt(angka).toLocaleString('id-ID');
+        }
+
+        function tambahBaris() {
+            const tbody = document.getElementById('tbody-kebutuhan');
+            const idx = barisCounter++;
+            const row = document.createElement('tr');
+            row.id = `baris-${idx}`;
+            row.className = 'hover:bg-slate-50/50';
+            row.innerHTML = `
+                <td class="px-3 py-2">
+                    <input type="text" name="kebutuhan[${idx}][nama]" required
+                        placeholder="Misal: Beras"
+                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-emerald-500">
+                </td>
+                <td class="px-2 py-2">
+                    <input type="number" name="kebutuhan[${idx}][qty]" required min="0"
+                        placeholder="0"
+                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-emerald-500 text-center">
+                </td>
+                <td class="px-2 py-2">
+                    <input type="text" name="kebutuhan[${idx}][satuan]" required
+                        placeholder="kg"
+                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-emerald-500 text-center">
+                </td>
+                <td class="px-2 py-2">
+                    <input type="number" name="kebutuhan[${idx}][harga]" required min="0"
+                        placeholder="0"
+                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-slate-700 focus:outline-none focus:border-emerald-500 text-right"
+                        oninput="hitungTotal()">
+                </td>
+                <td class="px-2 py-2 text-center">
+                    <button type="button" onclick="hapusBaris(${idx})" class="text-rose-400 hover:text-rose-600 transition cursor-pointer">
+                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function hapusBaris(idx) {
+            const baris = document.getElementById(`baris-${idx}`);
+            if (baris) baris.remove();
+            hitungTotal();
+        }
+
+        function hitungTotal() {
+            const hargaInputs = document.querySelectorAll('#tbody-kebutuhan input[name*="[harga]"]');
+            let total = 0;
+            hargaInputs.forEach(input => { total += parseFloat(input.value) || 0; });
+
+            document.getElementById('total-display').textContent = formatRupiah(total);
+            document.getElementById('input-nominal-hidden').value = total;
+        }
+
+        // Serialize kebutuhan rows to JSON before submit
+        document.getElementById('form-pengajuan-reguler').addEventListener('submit', function(e) {
+            const rows = document.querySelectorAll('#tbody-kebutuhan tr');
+            if (rows.length === 0) {
+                e.preventDefault();
+                alert('Harap tambahkan minimal satu rincian kebutuhan dana.');
+                return;
+            }
+            const kebutuhan = [];
+            rows.forEach(row => {
+                const namaEl   = row.querySelector('input[name*="[nama]"]');
+                const qtyEl    = row.querySelector('input[name*="[qty]"]');
+                const satuanEl = row.querySelector('input[name*="[satuan]"]');
+                const hargaEl  = row.querySelector('input[name*="[harga]"]');
+                if (namaEl && hargaEl) {
+                    kebutuhan.push({
+                        nama:   namaEl.value,
+                        qty:    qtyEl?.value || '',
+                        satuan: satuanEl?.value || '',
+                        harga:  parseFloat(hargaEl.value) || 0,
+                    });
+                }
+            });
+            document.getElementById('input-rincian-json').value = JSON.stringify(kebutuhan);
+        });
+
+        // =============================================
+        // LOGIKA VALIDASI TANGGAL BENTROK
+        // =============================================
         document.addEventListener("DOMContentLoaded", function () {
             const dateInput = document.getElementById("tanggalPelaksanaanInput");
             const dateErrorMessage = document.getElementById("date_error_message");
@@ -214,13 +334,11 @@
 
             function validateDate() {
                 if (dateInput.value) {
-                    const selectedDate = dateInput.value; // Format: YYYY-MM-DD (date input returns YYYY-MM-DD)
-
+                    const selectedDate = dateInput.value;
                     if (busyDates.includes(selectedDate)) {
                         dateErrorMessage.classList.remove("hidden");
                         dateInput.classList.remove("border-slate-200", "focus:border-emerald-600");
                         dateInput.classList.add("border-rose-400", "focus:border-rose-500", "bg-rose-50/30");
-                        
                         submitBtn.disabled = true;
                         submitBtn.classList.remove("bg-emerald-600", "hover:bg-emerald-700", "cursor-pointer");
                         submitBtn.classList.add("bg-slate-300", "text-slate-500", "cursor-not-allowed");
@@ -228,7 +346,6 @@
                         dateErrorMessage.classList.add("hidden");
                         dateInput.classList.remove("border-rose-400", "focus:border-rose-500", "bg-rose-50/30");
                         dateInput.classList.add("border-slate-200", "focus:border-emerald-600");
-                        
                         submitBtn.disabled = false;
                         submitBtn.classList.remove("bg-slate-300", "text-slate-500", "cursor-not-allowed");
                         submitBtn.classList.add("bg-emerald-600", "hover:bg-emerald-700", "cursor-pointer");
@@ -237,6 +354,9 @@
             }
 
             dateInput.addEventListener("change", validateDate);
+
+            // Tambah satu baris kosong saat halaman pertama kali dibuka
+            tambahBaris();
         });
     </script>
 </body>

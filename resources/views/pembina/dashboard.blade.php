@@ -86,9 +86,46 @@
                                             Nominal Diajukan: <span class="text-indigo-600 font-bold">Rp {{ number_format($item->nominal_diajukan, 0, ',', '.') }}</span>
                                         </p>
                                         
-                                        <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            <div><strong>Rincian Detail:</strong> {{ $item->rincian_detail }}</div>
-                                            <div><strong>Penerima Manfaat:</strong> {{ $item->penerima_manfaat }}</div>
+                                        <div class="text-xs text-slate-500 space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                            <div class="font-bold text-slate-600 uppercase tracking-wider text-[10px] mb-2">📋 Rincian Kebutuhan Anggaran</div>
+                                            @php
+                                                $rincianData = json_decode($item->rincian_detail, true);
+                                                $isJson = is_array($rincianData) && count($rincianData) > 0;
+                                            @endphp
+                                            @if($isJson)
+                                                <table class="w-full text-[11px]">
+                                                    <thead>
+                                                        <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase">
+                                                            <th class="text-left pb-1.5 pr-2">Nama</th>
+                                                            <th class="text-center pb-1.5 px-2">Qty</th>
+                                                            <th class="text-center pb-1.5 px-2">Satuan</th>
+                                                            <th class="text-right pb-1.5 pl-2">Harga</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-slate-100">
+                                                        @foreach($rincianData as $baris)
+                                                            <tr class="text-slate-600">
+                                                                <td class="py-1.5 pr-2 font-medium">{{ $baris['nama'] ?? ($baris['uraian'] ?? '-') }}</td>
+                                                                <td class="py-1.5 px-2 text-center">{{ $baris['qty'] ?? ($baris['kuantitas'] ?? '-') }}</td>
+                                                                <td class="py-1.5 px-2 text-center">{{ $baris['satuan'] ?? '-' }}</td>
+                                                                <td class="py-1.5 pl-2 text-right font-mono font-bold text-slate-700">Rp {{ number_format($baris['harga'] ?? ($baris['harga_satuan'] ?? 0), 0, ',', '.') }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr class="border-t-2 border-indigo-200 bg-indigo-50/50">
+                                                            <td colspan="3" class="pt-2 pr-2 font-bold text-indigo-700 uppercase text-[10px]">Total Anggaran</td>
+                                                            <td class="pt-2 pl-2 text-right font-black text-indigo-700 font-mono">
+                                                                Rp {{ number_format(collect($rincianData)->sum(fn($b) => $b['harga'] ?? ($b['harga_satuan'] ?? 0)), 0, ',', '.') }}
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            @else
+                                                {{-- Fallback untuk data lama yang masih berupa teks biasa --}}
+                                                <div>{{ $item->rincian_detail }}</div>
+                                            @endif
+                                            <div class="pt-1 border-t border-slate-200 mt-1"><strong>Penerima Manfaat:</strong> {{ $item->penerima_manfaat }}</div>
                                             <div><strong>Rencana Pelaksanaan:</strong> {{ \Carbon\Carbon::parse($item->tanggal_pelaksanaan)->translatedFormat('d F Y') }}</div>
                                         </div>
 

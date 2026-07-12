@@ -61,22 +61,27 @@ class PenyaluranRegulerController extends Controller
     public function simpanPengajuan(Request $request)
     {
         $request->validate([
-            'nama_program' => 'required|string|max:255',
-            'nominal_diajukan' => 'required|numeric|min:1',
-            'rincian_detail' => 'required|string',
-            'penerima_manfaat' => 'required|string',
-            'tanggal_pelaksanaan' => 'required|date',
-            'periode_bulan' => 'required|string|size:7',
+            'nama_program'       => 'required|string|max:255',
+            'nominal_diajukan'   => 'required|numeric|min:1',
+            'rincian_detail'     => 'required|string', // JSON string dari frontend
+            'penerima_manfaat'   => 'required|string',
+            'tanggal_pelaksanaan'=> 'required|date',
+            'periode_bulan'      => 'required|string|size:7',
         ]);
 
+        // Pastikan rincian_detail adalah JSON valid; jika tidak, simpan apa adanya
+        $rincianRaw = $request->rincian_detail;
+        $decoded = json_decode($rincianRaw, true);
+        $rincianFinal = (json_last_error() === JSON_ERROR_NONE) ? $rincianRaw : $rincianRaw;
+
         PenyaluranReguler::create([
-            'nama_program' => $request->nama_program,
-            'nominal_diajukan' => $request->nominal_diajukan,
-            'rincian_detail' => $request->rincian_detail,
-            'penerima_manfaat' => $request->penerima_manfaat,
+            'nama_program'        => $request->nama_program,
+            'nominal_diajukan'    => $request->nominal_diajukan,
+            'rincian_detail'      => $rincianFinal,
+            'penerima_manfaat'    => $request->penerima_manfaat,
             'tanggal_pelaksanaan' => $request->tanggal_pelaksanaan,
-            'periode_bulan' => $request->periode_bulan,
-            'status' => 'pending',
+            'periode_bulan'       => $request->periode_bulan,
+            'status'              => 'pending',
         ]);
 
         return redirect()->back()->with('sukses', 'Rencana penyaluran berhasil diajukan ke Pembina!');

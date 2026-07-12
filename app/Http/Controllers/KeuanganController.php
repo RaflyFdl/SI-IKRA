@@ -68,7 +68,7 @@ class KeuanganController extends Controller
                                         ->get();
 
         $antreanPencairan = PengajuanPencairanEkstra::where('status', 'PENDING')
-                                                    ->with('extraProgram')
+                                                    ->with('extraProgram.detailKebutuhan')
                                                     ->get();
 
         return view('keuangan.keuangan_infak_ekstra', compact(
@@ -186,5 +186,18 @@ class KeuanganController extends Controller
             \DB::rollBack();
             return redirect()->back()->with('error', 'Gagal memverifikasi nota: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * KEUANGAN: Cetak Laporan Realisasi Dana Ekstra
+     */
+    public function cetakLaporanEkstra($backupId)
+    {
+        $backup = \App\Models\DanaBackup::with(['pengajuan.extraProgram.detailKebutuhan'])->findOrFail($backupId);
+        $pengajuan = $backup->pengajuan;
+        $program = $pengajuan->extraProgram;
+        $laporan = \App\Models\LaporanPenggunaan::with('details')->where('pengajuan_id', $pengajuan->id)->firstOrFail();
+
+        return view('keuangan.cetak_laporan', compact('backup', 'pengajuan', 'program', 'laporan'));
     }
 }

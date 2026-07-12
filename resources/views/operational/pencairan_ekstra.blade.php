@@ -85,7 +85,9 @@
                             </div>
 
                             <div>
-                                <button onclick="openDisbursementModal('{{ $program->id }}', '{{ addslashes($program->name) }}', {{ $program->dana_clean_ekstra ?? $program->dana_bersih_ekstra ?? 0 }})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center space-x-2 cursor-pointer">
+                                <button onclick="openDisbursementModal(event, '{{ $program->id }}', '{{ addslashes($program->name) }}', {{ $program->dana_clean_ekstra ?? $program->dana_bersih_ekstra ?? 0 }})" 
+                                        data-details="{{ json_encode($program->detailKebutuhan) }}"
+                                        class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm inline-flex items-center space-x-2 cursor-pointer">
                                     <i class="fa-solid fa-money-bill-transfer"></i>
                                     <span>Minta Pencairan Dana</span>
                                 </button>
@@ -188,6 +190,11 @@
                     <input type="text" id="modal_program_amount" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-sm font-bold text-emerald-600" readonly>
                 </div>
 
+                <div id="modal_rincian_container" class="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-2 hidden">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-list-check"></i> Rincian Kebutuhan Dana</label>
+                    <ul id="modal_rincian_list" class="text-xs text-slate-700 space-y-1 list-disc list-inside"></ul>
+                </div>
+
                 <hr class="border-slate-100">
 
                 <div>
@@ -214,11 +221,34 @@
     </div>
 
     <script>
-        function openDisbursementModal(id, name, amount) {
+        function openDisbursementModal(event, id, name, amount) {
             document.getElementById('modal_program_id').value = id;
             document.getElementById('modal_program_name').value = name;
             document.getElementById('modal_program_amount').value = 'Rp ' + amount.toLocaleString('id-ID');
             
+            // Render Rincian Kebutuhan
+            const detailsJson = event.currentTarget.getAttribute('data-details');
+            const rincianContainer = document.getElementById('modal_rincian_container');
+            const rincianList = document.getElementById('modal_rincian_list');
+            
+            rincianList.innerHTML = ''; // bersihkan list
+            
+            if (detailsJson) {
+                const details = JSON.parse(detailsJson);
+                if (details && details.length > 0) {
+                    details.forEach(dt => {
+                        const li = document.createElement('li');
+                        li.textContent = `${dt.nama_barang} - ${dt.jumlah} ${dt.satuan} (Rp ${Number(dt.harga).toLocaleString('id-ID')})`;
+                        rincianList.appendChild(li);
+                    });
+                    rincianContainer.classList.remove('hidden');
+                } else {
+                    rincianContainer.classList.add('hidden');
+                }
+            } else {
+                rincianContainer.classList.add('hidden');
+            }
+
             const modal = document.getElementById('disbursementModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');

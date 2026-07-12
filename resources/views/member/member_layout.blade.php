@@ -52,6 +52,9 @@
             <a href="/dashboard/profil" class="py-3.5 px-5 font-bold text-sm transition-all rounded-t-xl whitespace-nowrap {{ Request::is('dashboard/profil') ? 'text-[#0b6e3f] border-b-2 border-[#0b6e3f] bg-emerald-50/40' : 'text-gray-400 hover:text-gray-700' }}">
                 👤 3. Pengaturan Profil
             </a>
+            <a href="/dashboard/program-ikra" class="py-3.5 px-5 font-bold text-sm transition-all rounded-t-xl whitespace-nowrap {{ Request::is('dashboard/program-ikra') ? 'text-[#0b6e3f] border-b-2 border-[#0b6e3f] bg-emerald-50/40' : 'text-gray-400 hover:text-gray-700' }}">
+                📋 4. Program IKRA
+            </a>
         </div>
 
         <div class="transition-all duration-300">

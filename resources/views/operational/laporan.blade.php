@@ -60,10 +60,28 @@
                 <p class="text-xs text-slate-500 mt-1">Masukkan rincian nota belanja lapangan secara detail. Sistem akan menghitung otomatis selisih dana anggaran.</p>
             </div>
 
+            @if($errors->any())
+                <div class="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start space-x-3 shadow-sm">
+                    <span class="mt-0.5">❌</span>
+                    <ul class="text-sm font-medium list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
+            @if(session('error'))
+                <div class="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center space-x-3 shadow-sm">
+                    <span>❌</span>
+                    <p class="text-sm font-medium">{{ session('error') }}</p>
+                </div>
+            @endif
+
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <span class="text-slate-400 block font-bold uppercase tracking-wider text-[10px]">Nama Program Kerja (Ekstra)</span>
-                    <span class="font-bold text-slate-800 text-sm block mt-0.5">{{ $pengajuan->program_name ?? $pengajuan->name }}</span>
+                    <span class="font-bold text-slate-800 text-sm block mt-0.5">{{ $pengajuan->extraProgram->name ?? 'Program Tidak Diketahui' }}</span>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
                     <span class="text-emerald-800 block font-bold uppercase tracking-wider text-[10px]">Dana Dicairkan Keuangan</span>
@@ -72,6 +90,36 @@
                     </span>
                 </div>
             </div>
+            
+            @if(isset($pengajuan->extraProgram) && $pengajuan->extraProgram->detailKebutuhan->count() > 0)
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
+                <h3 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-emerald-600"></i> Acuan Rencana Kebutuhan Dana Awal
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <th class="p-3 font-bold w-12 text-center">No</th>
+                                <th class="p-3 font-bold">Kebutuhan / Barang</th>
+                                <th class="p-3 font-bold text-center">Jumlah</th>
+                                <th class="p-3 font-bold text-right">Estimasi Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach($pengajuan->extraProgram->detailKebutuhan as $index => $detail)
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3 text-center text-slate-500">{{ $index + 1 }}</td>
+                                    <td class="p-3 font-medium">{{ $detail->nama_barang }}</td>
+                                    <td class="p-3 text-center bg-slate-50 border-x border-slate-100">{{ $detail->jumlah }} {{ $detail->satuan }}</td>
+                                    <td class="p-3 text-right font-medium text-slate-800">Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
 
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
                 <form action="{{ route('operational.laporan.store', $pengajuan->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">

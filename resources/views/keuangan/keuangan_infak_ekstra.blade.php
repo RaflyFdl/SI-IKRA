@@ -128,6 +128,7 @@
                             <th class="p-4">Sisa Pengembalian</th>
                             <th class="p-4 text-center">Rincian Pemakaian</th>
                             <th class="p-4 text-center">Bukti Transfer</th>
+                            <th class="p-4 text-center">Detail Laporan Realisasi Dana</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -163,11 +164,16 @@
                                             <span class="text-gray-400 italic text-xs">Tidak ada file</span>
                                         @endif
                                     </td>
+                                    <td class="p-4 text-center">
+                                        <a href="{{ route('keuangan.penyaluran-ekstra.cetak', $backup->id) }}" target="_blank" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+                                            🖨️ Cetak Draft
+                                        </a>
+                                    </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="7" class="text-center py-10 text-gray-400 text-sm">
+                                <td colspan="8" class="text-center py-10 text-gray-400 text-sm">
                                     📭 Belum ada riwayat laporan realisasi penggunaan dana dari tim operasional.
                                 </td>
                             </tr>
@@ -195,6 +201,17 @@
                             <p class="text-xs font-semibold text-gray-700">
                                 Nominal Transfer: <span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">Rp{{ number_format($item->nominal_diminta, 0, ',', '.') }}</span>
                             </p>
+                            
+                            @if($item->extraProgram->detailKebutuhan && $item->extraProgram->detailKebutuhan->count() > 0)
+                            <div class="mt-3 bg-white p-3 rounded-lg border border-slate-200">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-list-check"></i> Rincian Kebutuhan Lapangan:</p>
+                                <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                                    @foreach($item->extraProgram->detailKebutuhan as $dt)
+                                    <li>{{ $dt->nama_barang }} - {{ $dt->jumlah }} {{ $dt->satuan }} (Rp {{ number_format($dt->harga, 0, ',', '.') }})</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @endif
                         </div>
 
                         <form action="{{ route('keuangan.cairkan.proses', $item->id) }}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-end gap-3 border border-dashed border-gray-200 p-4 rounded-xl bg-slate-50/30">

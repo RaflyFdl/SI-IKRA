@@ -6,13 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Models\ExtraProgram;
 
 class ExtraProgramController extends Controller
 {
     // 1. Menampilkan halaman detail informasi program
     public function show($id)
     {
-        $program = DB::table('extra_programs')->where('id', $id)->first();
+        $program = ExtraProgram::with('detailKebutuhan')->where('id', $id)->first();
 
         if (!$program) {
             abort(404);

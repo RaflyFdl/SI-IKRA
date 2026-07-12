@@ -30,9 +30,56 @@
         <div class="p-6 space-y-4">
             <h1 class="text-2xl font-bold text-slate-900 leading-tight">{{ $program->name }}</h1>
             
+            @if($program->target_amount > 0)
+            <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 flex justify-between items-center shadow-sm">
+                <div>
+                    <span class="block text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">🎯 Target Penggalangan Dana</span>
+                    <span class="text-lg font-bold text-emerald-800">Rp {{ number_format($program->target_amount, 0, ',', '.') }}</span>
+                </div>
+            </div>
+            @endif
+            
             <div class="text-sm text-slate-600 leading-relaxed space-y-2 whitespace-pre-line">
                 {{ $program->description }}
             </div>
+
+            @if($program->detailKebutuhan && $program->detailKebutuhan->count() > 0)
+                <div class="mt-6 border-t border-slate-100 pt-6">
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-600"></i> Rincian Kebutuhan Dana
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500">
+                                    <th class="p-3 font-semibold w-12 text-center border-b border-slate-200">No</th>
+                                    <th class="p-3 font-semibold border-b border-slate-200">Kebutuhan</th>
+                                    <th class="p-3 font-semibold text-center border-b border-slate-200">Jumlah</th>
+                                    <th class="p-3 font-semibold text-right border-b border-slate-200">Estimasi Harga</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @php $totalEstimasi = 0; @endphp
+                                @foreach($program->detailKebutuhan as $index => $detail)
+                                    @php $totalEstimasi += $detail->harga; @endphp
+                                    <tr class="hover:bg-slate-50/50 transition">
+                                        <td class="p-3 text-center text-slate-500">{{ $index + 1 }}</td>
+                                        <td class="p-3 font-medium text-slate-700">{{ $detail->nama_barang }}</td>
+                                        <td class="p-3 text-center text-slate-600">{{ $detail->jumlah }} {{ $detail->satuan }}</td>
+                                        <td class="p-3 text-right font-medium text-slate-800">Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50 font-bold text-slate-900 border-t border-slate-200">
+                                    <td colspan="3" class="p-3 text-right">Total Estimasi</td>
+                                    <td class="p-3 text-right text-emerald-700">Rp {{ number_format($totalEstimasi, 0, ',', '.') }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

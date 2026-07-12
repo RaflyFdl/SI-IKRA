@@ -26,4 +26,10 @@ class DanaBackup extends Model
     {
         return $this->belongsTo(PengajuanPencairanEkstra::class, 'pengajuan_id');
     }
+
+    // Relasi ke tabel penyaluran reguler (untuk dana reguler)
+    public function reguler()
+    {
+        return $this->belongsTo(PenyaluranReguler::class, 'pengajuan_id');
+    }
 }

@@ -157,9 +157,46 @@
                             <tbody class="divide-y divide-gray-100 text-sm">
                                 @foreach($pengajuanReguler as $p)
                                     <tr class="hover:bg-slate-50/50">
-                                        <td class="py-4 px-4 font-semibold text-gray-900">
-                                            {{ $p->nama_program }}
-                                            <span class="block text-[11px] font-normal text-gray-500 mt-0.5">{{ $p->rincian_detail }}</span>
+                                        <td class="py-4 px-4 font-semibold text-gray-900 align-top">
+                                            <div class="font-bold text-slate-800">{{ $p->nama_program }}</div>
+                                            @php
+                                                $rincianData = json_decode($p->rincian_detail, true);
+                                                $isJson = is_array($rincianData) && count($rincianData) > 0;
+                                            @endphp
+                                            @if($isJson)
+                                                <div class="mt-2 border border-slate-200 rounded-lg overflow-hidden text-[10px]">
+                                                    <table class="w-full">
+                                                        <thead class="bg-slate-100 text-slate-500 font-bold uppercase">
+                                                            <tr>
+                                                                <th class="py-1.5 px-2 text-left">Nama</th>
+                                                                <th class="py-1.5 px-1 text-center">Qty</th>
+                                                                <th class="py-1.5 px-1 text-center">Satuan</th>
+                                                                <th class="py-1.5 px-2 text-right">Harga</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-slate-100">
+                                                            @foreach($rincianData as $baris)
+                                                                <tr class="text-slate-600">
+                                                                    <td class="py-1 px-2 font-medium">{{ $baris['nama'] ?? ($baris['uraian'] ?? '-') }}</td>
+                                                                    <td class="py-1 px-1 text-center">{{ $baris['qty'] ?? ($baris['kuantitas'] ?? '-') }}</td>
+                                                                    <td class="py-1 px-1 text-center">{{ $baris['satuan'] ?? '-' }}</td>
+                                                                    <td class="py-1 px-2 text-right font-mono font-bold text-slate-700">Rp {{ number_format($baris['harga'] ?? ($baris['harga_satuan'] ?? 0), 0, ',', '.') }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                        <tfoot class="bg-emerald-50 border-t-2 border-emerald-200">
+                                                            <tr>
+                                                                <td colspan="3" class="py-1.5 px-2 font-bold text-emerald-800 uppercase tracking-wider">Total</td>
+                                                                <td class="py-1.5 px-2 text-right font-black text-emerald-700 font-mono">
+                                                                    Rp {{ number_format(collect($rincianData)->sum(fn($b) => $b['harga'] ?? ($b['harga_satuan'] ?? 0)), 0, ',', '.') }}
+                                                                </td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                            @else
+                                                <span class="block text-[11px] font-normal text-gray-500 mt-0.5">{{ $p->rincian_detail }}</span>
+                                            @endif
                                         </td>
                                         <td class="py-4 px-4 text-gray-600 text-xs">{{ $p->penerima_manfaat }}</td>
                                         <td class="py-4 px-4 font-bold text-indigo-700">Rp {{ number_format($p->nominal_diajukan, 0, ',', '.') }}</td>

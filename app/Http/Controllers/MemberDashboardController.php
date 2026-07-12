@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Member;
+use App\Models\ExtraProgram;
+use App\Models\PenyaluranReguler;
 use Illuminate\Support\Facades\Auth;
 
 class MemberDashboardController extends Controller
@@ -55,5 +57,23 @@ class MemberDashboardController extends Controller
 
         // 4. Lempar data member yang valid ke halaman profil.blade.php
         return view('member.profil', compact('member'));
+    }
+
+    /**
+     * FUNGSI BARU: Menampilkan halaman Program IKRA (Reguler & Ekstra) - Tab 4
+     */
+    public function ikraProgram()
+    {
+        // Ambil semua program ekstra (aktif maupun selesai) diurutkan terbaru
+        $programEkstra = ExtraProgram::where('category', 'Donasi Umum')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Ambil program reguler (kecuali yang ditolak), diurutkan terbaru
+        $programReguler = PenyaluranReguler::whereNotIn('status', ['ditolak'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('member.ikra_program', compact('programEkstra', 'programReguler'));
     }
 }

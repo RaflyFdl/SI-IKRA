@@ -18,7 +18,7 @@ class PenyaluranEkstraController extends Controller
     public function pencairanEkstra()
     {
         // 1. Donasi Umum: hanya tampil jika BELUM PERNAH diajukan pencairan (program 1 kali)
-        $donasiPrograms = ExtraProgram::where('category', 'Donasi Umum')
+        $donasiPrograms = ExtraProgram::with('detailKebutuhan')->where('category', 'Donasi Umum')
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                       ->from('pengajuan_pencairan_ekstra')
@@ -26,7 +26,7 @@ class PenyaluranEkstraController extends Controller
             })->get();
 
         // 2. Podcast & Cinema Edukasi: SELALU tampil (program ongoing yang terus butuh pencairan)
-        $ongoingPrograms = ExtraProgram::whereIn('category', ['Podcast', 'Cinema Edukasi'])
+        $ongoingPrograms = ExtraProgram::with('detailKebutuhan')->whereIn('category', ['Podcast', 'Cinema Edukasi'])
             ->where('status', 'active')
             ->get();
 
@@ -84,7 +84,7 @@ class PenyaluranEkstraController extends Controller
      */
     public function showLaporanForm($pengajuanId)
     {
-        $pengajuan = PengajuanPencairanEkstra::findOrFail($pengajuanId);
+        $pengajuan = PengajuanPencairanEkstra::with('extraProgram.detailKebutuhan')->findOrFail($pengajuanId);
         return view('operational.laporan', compact('pengajuan'));
     }
 
@@ -130,7 +130,7 @@ class PenyaluranEkstraController extends Controller
                 'pengajuan_id' => $pengajuan->id,
                 'total_terpakai' => $totalTerpakai, 
                 'selisih' => $selisih,
-                'bukti_transfer_pencairan' => $pathBuktiSisa, // Mencatat path pengembalian sisa uang
+                'bukti_pengembalian' => $pathBuktiSisa, // Mencatat path pengembalian sisa uang
             ]);
 
             // Simpan setiap item rincian nota belanja
@@ -149,11 +149,13 @@ class PenyaluranEkstraController extends Controller
             // Penentuan alokasi status akhir pengajuan & pengaliran sisa dana
             if ($selisih > 0) {
                 // ⚠️ POIN 5: Sisa uang otomatis dialokasikan dan dicatat ke tabel Dana Backup Global yayasan
-                DanaBackup::create([
+                DB::table('dana_backup')->insert([
                     'sumber_dana' => 'EKSTRA',
                     'pengajuan_id' => $pengajuan->id,
                     'nominal' => $selisih,
                     'bukti_transfer' => $pathBuktiSisa,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
                 $pengajuan->update(['status' => 'SELESAI']);

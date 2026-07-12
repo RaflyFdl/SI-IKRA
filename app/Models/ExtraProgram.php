@@ -82,4 +82,12 @@ class ExtraProgram extends Model
         // Bersihkan duplikasi dan kembalikan array unik terindeks
         return array_values(array_unique(array_filter($dates)));
     }
+
+    /**
+     * Relasi ke tabel detail kebutuhan program ekstra (One-to-Many)
+     */
+    public function detailKebutuhan()
+    {
+        return $this->hasMany(DetailKebutuhanProgramEkstra::class, 'extra_program_id');
+    }
 }

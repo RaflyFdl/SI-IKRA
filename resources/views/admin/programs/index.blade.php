@@ -119,6 +119,37 @@
                             </div>
                         </div>
 
+                        <!-- Rincian Kebutuhan Dana (Dynamic Form) -->
+                        <div class="border-t border-slate-100 pt-4 mt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-xs font-bold text-slate-700 uppercase">Rincian Kebutuhan Dana (Opsional)</label>
+                                <button type="button" id="addRincianBtn" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-plus"></i> Tambah
+                                </button>
+                            </div>
+                            <div id="rincianContainer" class="space-y-3">
+                                <!-- Baris Pertama (Kosong) -->
+                                <div class="flex gap-2 items-end rincian-row">
+                                    <div class="flex-1">
+                                        <input type="text" name="nama_barang[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Nama Brg (Cth: Beras)">
+                                    </div>
+                                    <div class="w-16">
+                                        <input type="number" name="jumlah[]" value="1" min="1" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Qty">
+                                    </div>
+                                    <div class="w-20">
+                                        <input type="text" name="satuan[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Satuan">
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="number" name="harga[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Harga (Rp)">
+                                    </div>
+                                    <button type="button" class="remove-btn text-rose-500 hover:text-rose-700 p-2 hidden">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">* Kosongkan baris jika tidak ada rincian tambahan.</p>
+                        </div>
+
                         <button type="submit" id="submitButton" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-sm py-3 rounded-xl transition shadow-md mt-2 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-key"></i> Simpan & Buat VA Otomatis
                         </button>
@@ -268,6 +299,40 @@
             categorySelect.addEventListener("change", adjustFormFields);
             executionDateInput.addEventListener("input", checkDateConflict);
             adjustFormFields();
+
+            // Script untuk Dynamic Form Rincian Kebutuhan Dana
+            const addRincianBtn = document.getElementById("addRincianBtn");
+            const rincianContainer = document.getElementById("rincianContainer");
+
+            addRincianBtn.addEventListener("click", function() {
+                const row = document.createElement("div");
+                row.className = "flex gap-2 items-end rincian-row mt-3";
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <input type="text" name="nama_barang[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Nama Brg (Cth: Beras)">
+                    </div>
+                    <div class="w-16">
+                        <input type="number" name="jumlah[]" value="1" min="1" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Qty">
+                    </div>
+                    <div class="w-20">
+                        <input type="text" name="satuan[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Satuan (kg)">
+                    </div>
+                    <div class="flex-1">
+                        <input type="number" name="harga[]" class="w-full border border-slate-200 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-slate-900" placeholder="Harga Total (Rp)">
+                    </div>
+                    <button type="button" class="remove-btn text-rose-500 hover:text-rose-700 p-2">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+                rincianContainer.appendChild(row);
+                
+                // Aktifkan tombol remove
+                row.querySelector(".remove-btn").addEventListener("click", function() {
+                    row.remove();
+                });
+            });
+
+            // Handle remove untuk row yang pertama jika dimunculkan (opsional)
         });
     </script>
 </body>

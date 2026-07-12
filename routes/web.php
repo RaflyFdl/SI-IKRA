@@ -82,6 +82,9 @@ Route::get('/infak-ekstra/invoice/{transaction_id}', [ExtraProgramController::cl
 
 Route::get('/dashboard/profil', [MemberDashboardController::class, 'profil'])->name('member.profil');
 
+// 📋 ROUTE BARU: Halaman Program IKRA (Reguler & Ekstra) untuk anggota
+Route::get('/dashboard/program-ikra', [MemberDashboardController::class, 'ikraProgram'])->name('member.ikra-program');
+
 // Logout
 Route::post('/logout', function () {
     \Illuminate\Support\Facades\Auth::logout();
@@ -137,7 +140,8 @@ Route::post('/keuangan/operasional/cairkan/{id}', [TransactionController::class,
 // 🔄 ROUTE BARU KEUANGAN (OPERASIONAL INTERNAL): Disesuaikan ke KeuanganController untuk verifikasi nota & mutasi otomatis
 Route::post('/keuangan/operasional/konfirmasi-nota/{id}', [KeuanganController::class, 'konfirmasiNotaOperasional'])->name('keuangan.keuangan.operasional.konfirmasi-nota');
 
-
+// 🖨️ ROUTE BARU KEUANGAN: Cetak laporan realisasi penggunaan dana
+Route::get('/keuangan/penyaluran-ekstra/cetak-laporan/{backupId}', [KeuanganController::class, 'cetakLaporanEkstra'])->name('keuangan.penyaluran-ekstra.cetak');
 // ==========================================
 // 4.5 JALUR KHUSUS OPERASIONAL
 // ==========================================

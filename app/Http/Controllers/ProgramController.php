@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExtraProgram;
+use App\Models\DetailKebutuhanProgramEkstra;
 use App\Models\Member;
 use App\Models\Podcast;
 use App\Models\CinemaEdukasi;
@@ -39,6 +40,14 @@ class ProgramController extends Controller
             'end_date' => 'nullable|date',
             'execution_date' => 'nullable|date', // Validasi tanggal pelaksanaan opsional di awal
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Batasi gambar maks 2MB
+            'nama_barang' => 'nullable|array',
+            'nama_barang.*' => 'required|string',
+            'jumlah' => 'nullable|array',
+            'jumlah.*' => 'required|integer|min:1',
+            'satuan' => 'nullable|array',
+            'satuan.*' => 'nullable|string',
+            'harga' => 'nullable|array',
+            'harga.*' => 'required|numeric|min:0',
         ]);
 
         // Proses upload foto jika ada file yang diunggah
@@ -70,6 +79,21 @@ class ProgramController extends Controller
             'image_path' => $imagePath,
             'status' => 'active'
         ]);
+
+        // Simpan rincian kebutuhan dana jika ada
+        if ($request->has('nama_barang') && is_array($request->nama_barang)) {
+            foreach ($request->nama_barang as $key => $namaBarang) {
+                if (!empty($namaBarang)) {
+                    DetailKebutuhanProgramEkstra::create([
+                        'extra_program_id' => $program->id,
+                        'nama_barang' => $namaBarang,
+                        'jumlah' => $request->jumlah[$key] ?? 1,
+                        'satuan' => $request->satuan[$key] ?? null,
+                        'harga' => $request->harga[$key] ?? 0,
+                    ]);
+                }
+            }
+        }
 
         // --- FITUR AUTOMATION REAL-TIME EMAIL NOTIFIKASI ANGGOTA ---
         // Ambil data semua anggota yang status akunnya sudah aktif resmi
