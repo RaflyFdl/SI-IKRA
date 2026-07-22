@@ -20,9 +20,21 @@ class PenyaluranReguler extends Model
         'tanggal_pelaksanaan',
         'periode_bulan',
         'status',
+        'catatan_pembina',
+        'bukti_transfer',
+        'bukti_transfer_path',
+        'dicairkan_at',
         'disetujui_pembina_at',
         'rincian_realisasi',
         'file_nota',
         'laporan_diterima_keuangan_at'
     ];
+
+    /**
+     * Relasi One-to-One ke Laporan Realisasi Reguler
+     */
+    public function laporan()
+    {
+        return $this->hasOne(LaporanReguler::class, 'penyaluran_reguler_id');
+    }
 }

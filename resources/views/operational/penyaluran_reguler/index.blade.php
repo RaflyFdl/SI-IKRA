@@ -210,8 +210,13 @@
                                                         <i class="fa-solid fa-file-pen"></i> Isi Laporan Belanja
                                                     </a>
                                                 </div>
+                                            @elseif($sp->status == 'reimburse_pending')
+                                                <div class="flex flex-col items-center gap-1.5">
+                                                    <span class="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-full">🚨 Kurang Dana</span>
+                                                    <span class="text-[10px] text-rose-500 font-medium">Menunggu Reimburse Keuangan</span>
+                                                </div>
                                             @elseif($sp->status == 'dilaporkan')
-                                                <span class="inline-block px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold rounded-full">📋 LPJ Selesai</span>
+                                                <span class="inline-block px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold rounded-full">✅ LPJ Selesai</span>
                                             @endif
                                         </td>
                                     </tr>

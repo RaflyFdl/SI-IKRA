@@ -287,7 +287,233 @@
             </div>
         </div>
 
+        {{-- ===================================================
+             SECTION BARU: ANTREAN REIMBURSE DANA REGULER
+             Tampil jika ada program yg kurang dana & butuh reimburse
+             =================================================== --}}
+        @if(isset($antreanRegulerReimburse) && $antreanRegulerReimburse->count() > 0)
+        <div class="bg-white rounded-2xl border border-rose-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-rose-100 bg-rose-50/40">
+                <h2 class="font-bold text-rose-800 text-base tracking-tight flex items-center gap-2">
+                    <span>🚨</span> Antrean Reimburse Dana Reguler
+                </h2>
+                <p class="text-xs text-rose-600 mt-0.5">Program berikut mengalami kekurangan dana di lapangan. Silakan transfer kekurangan dana dan upload bukti untuk menyelesaikannya.</p>
+            </div>
+            <div class="divide-y divide-rose-50">
+                @foreach($antreanRegulerReimburse as $prog)
+                <div class="p-6 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                    <div class="space-y-2 flex-1">
+                        <h4 class="text-sm font-bold text-gray-900">{{ $prog->nama_program }}</h4>
+                        <div class="text-xs text-gray-500">
+                            <span class="font-semibold text-gray-700">Periode:</span> {{ $prog->periode_bulan }} &nbsp;|&nbsp;
+                            <span class="font-semibold text-gray-700">Penerima:</span> {{ $prog->penerima_manfaat }}
+                        </div>
+                        <div class="flex flex-wrap gap-3 text-xs font-medium">
+                            <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                                Dana Dicairkan: <strong class="text-slate-800">Rp {{ number_format($prog->nominal_diajukan, 0, ',', '.') }}</strong>
+                            </div>
+                            @if($prog->laporan)
+                            <div class="bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg">
+                                Realisasi Terpakai: <strong class="text-blue-800">Rp {{ number_format($prog->laporan->total_pengeluaran, 0, ',', '.') }}</strong>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg">
+                                Kekurangan Dana: <strong class="text-rose-800">Rp {{ number_format(abs($prog->laporan->selisih_dana), 0, ',', '.') }}</strong>
+                            </div>
+                            @endif
+                        </div>
+                        <p class="text-[11px] text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg inline-block font-medium">
+                            ⚠️ Dana reguler bulan <strong>{{ $prog->periode_bulan }}</strong> akan dipotong sebesar nominal kekurangan di atas.
+                        </p>
+                    </div>
+
+                    <form action="{{ route('keuangan.penyaluran-reguler.reimburse', $prog->id) }}" method="POST" enctype="multipart/form-data"
+                          class="flex flex-col sm:flex-row sm:items-end gap-3 border border-dashed border-rose-200 p-4 rounded-xl bg-rose-50/20 min-w-0 lg:min-w-[320px]">
+                        @csrf
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1">Upload Bukti Transfer Reimburse</label>
+                            <input type="file" name="bukti_transfer_reimburse" required
+                                   class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rose-700 file:text-white hover:file:bg-rose-800 transition cursor-pointer">
+                        </div>
+                        <button type="submit"
+                                class="bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer whitespace-nowrap h-9">
+                            Konfirmasi Reimburse 💸
+                        </button>
+                    </form>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- ===================================================
+             SECTION BARU: LAPORAN REALISASI PENGGUNAAN DANA REGULER
+             Menampilkan semua LPJ yang sudah disubmit oleh operasional
+             =================================================== --}}
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-gray-100 bg-slate-50/50">
+                <h2 class="font-bold text-gray-900 text-base tracking-tight flex items-center gap-2">
+                    <span>🔄</span> Laporan Realisasi Penggunaan Dana Reguler
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">Rekap perbandingan dana awal yang dicairkan vs. realisasi penggunaan dana lapangan dari tim operasional.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase">
+                            <th class="p-4">Tgl. Laporan</th>
+                            <th class="p-4">Nama Program / Periode</th>
+                            <th class="p-4">Dana Awal (Cair)</th>
+                            <th class="p-4">Realisasi Terpakai</th>
+                            <th class="p-4">Sisa / Kurang</th>
+                            <th class="p-4 text-center">Rincian Nota</th>
+                            <th class="p-4 text-center">Bukti Sisa</th>
+                            <th class="p-4 text-center">Cetak Laporan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @if(isset($riwayatLaporanReguler) && $riwayatLaporanReguler->count() > 0)
+                            @foreach($riwayatLaporanReguler as $lpj)
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="p-4 text-gray-600 font-medium text-xs">
+                                    {{ $lpj->created_at ? $lpj->created_at->format('d M Y') : '-' }}
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-gray-900 text-sm">{{ $lpj->penyaluranReguler->nama_program ?? '-' }}</div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5">
+                                        Periode: {{ $lpj->penyaluranReguler->periode_bulan ?? '-' }}
+                                        @if($lpj->penyaluranReguler && $lpj->penyaluranReguler->status === 'reimburse_pending')
+                                            <span class="ml-1 bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[10px] font-bold">Reimburse Pending</span>
+                                        @elseif($lpj->penyaluranReguler && $lpj->penyaluranReguler->status === 'dilaporkan')
+                                            <span class="ml-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-bold">✅ Selesai</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="p-4 text-slate-600 font-semibold text-sm">
+                                    Rp {{ number_format($lpj->penyaluranReguler->nominal_diajukan ?? 0, 0, ',', '.') }}
+                                </td>
+                                <td class="p-4 text-blue-600 font-semibold text-sm">
+                                    Rp {{ number_format($lpj->total_pengeluaran, 0, ',', '.') }}
+                                </td>
+                                <td class="p-4 font-bold text-sm">
+                                    @if($lpj->selisih_dana > 0)
+                                        <span class="text-emerald-600">+Rp {{ number_format($lpj->selisih_dana, 0, ',', '.') }}</span>
+                                        <div class="text-[10px] text-emerald-500 font-normal">Kelebihan (Dikembalikan)</div>
+                                    @elseif($lpj->selisih_dana < 0)
+                                        <span class="text-rose-600">-Rp {{ number_format(abs($lpj->selisih_dana), 0, ',', '.') }}</span>
+                                        <div class="text-[10px] text-rose-500 font-normal">Kurang Dana</div>
+                                    @else
+                                        <span class="text-slate-500">Pas / Seimbang</span>
+                                    @endif
+                                </td>
+                                <td class="p-4 text-center">
+                                    <button onclick="bukaModalRincianReguler('{{ addslashes($lpj->penyaluranReguler->nama_program ?? 'Program') }}', '{{ json_encode($lpj->items_nota ?? []) }}')"
+                                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 transition shadow-sm cursor-pointer">
+                                        📋 Lihat Rincian
+                                    </button>
+                                </td>
+                                <td class="p-4 text-center">
+                                    @if($lpj->bukti_pengembalian_sisa)
+                                        <a href="{{ asset('storage/' . $lpj->bukti_pengembalian_sisa) }}" target="_blank"
+                                           class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm border border-indigo-100">
+                                            🔍 Bukti Sisa
+                                        </a>
+                                    @elseif($lpj->bukti_reimburse)
+                                        <a href="{{ asset('storage/' . $lpj->bukti_reimburse) }}" target="_blank"
+                                           class="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm border border-rose-100">
+                                            🧾 Bukti Reimburse
+                                        </a>
+                                    @else
+                                        <span class="text-gray-400 italic text-xs">—</span>
+                                    @endif
+                                </td>
+                                <td class="p-4 text-center">
+                                    <a href="{{ route('keuangan.penyaluran-reguler.cetak', $lpj->id) }}" target="_blank"
+                                       class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition cursor-pointer">
+                                        🖨️ Cetak Draft
+                                    </a>
+                                </td>
+                            </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="8" class="text-center py-10 text-gray-400 text-sm">
+                                    📭 Belum ada laporan realisasi penggunaan dana reguler dari tim operasional.
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
 
+    {{-- Modal Rincian Nota Reguler --}}
+    <div id="modalRincianReguler" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+                <div>
+                    <h3 class="font-bold text-gray-900 text-lg">Breakdown Detail Penggunaan Dana</h3>
+                    <p id="modalNamaProgramReguler" class="text-xs text-emerald-700 font-semibold mt-0.5">Nama Program</p>
+                </div>
+                <button onclick="tutupModalRincianReguler()" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold p-1 cursor-pointer">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-gray-400 font-bold uppercase tracking-wider">
+                            <th class="pb-3 w-1/12 text-center">No</th>
+                            <th class="pb-3 w-5/12">Tanggal Nota</th>
+                            <th class="pb-3 w-4/12">Uraian Belanja</th>
+                            <th class="pb-3 w-2/12 text-right">Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalBodyReguler" class="divide-y divide-gray-100 text-gray-700">
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-gray-100 text-right rounded-b-2xl">
+                <button onclick="tutupModalRincianReguler()" class="bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function bukaModalRincianReguler(namaProgram, itemsJson) {
+            document.getElementById('modalNamaProgramReguler').innerText = "📌 " + namaProgram;
+            const items = JSON.parse(itemsJson);
+            const body = document.getElementById('modalBodyReguler');
+            body.innerHTML = "";
+
+            if (!items || items.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-400 italic">Tidak ada catatan rincian nota belanja.</td></tr>`;
+            } else {
+                items.forEach((item, index) => {
+                    const row = `
+                        <tr class="hover:bg-slate-50/40">
+                            <td class="py-3 text-center text-gray-400 font-medium">${index + 1}</td>
+                            <td class="py-3 font-mono text-gray-600">${item.tanggal ?? '-'}</td>
+                            <td class="py-3 font-semibold text-gray-900">${item.uraian ?? '-'}</td>
+                            <td class="py-3 text-right font-bold text-slate-900">Rp ${Number(item.nominal ?? 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
+                    body.innerHTML += row;
+                });
+            }
+
+            const modal = document.getElementById('modalRincianReguler');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function tutupModalRincianReguler() {
+            const modal = document.getElementById('modalRincianReguler');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
+
 </body>
-</html>
+</html>

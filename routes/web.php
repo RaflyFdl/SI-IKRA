@@ -134,6 +134,12 @@ Route::post('/keuangan/penyaluran-ekstra/cairkan/{pengajuanId}', [PenyaluranEkst
 // 💵 ROUTE BARU KEUANGAN (INFAK REGULER): Memproses unggah bukti transfer pencairan infak reguler
 Route::post('/keuangan/penyaluran-reguler/cairkan/{id}', [PenyaluranRegulerController::class, 'prosesCairkanKeuangan'])->name('keuangan.penyaluran-reguler.cairkan');
 
+// 🔄 ROUTE BARU KEUANGAN (INFAK REGULER): Konfirmasi & Upload Bukti Reimburse Dana Reguler (Kurang Dana)
+Route::post('/keuangan/penyaluran-reguler/reimburse/{id}', [PenyaluranRegulerController::class, 'prosesRegulerReimburse'])->name('keuangan.penyaluran-reguler.reimburse');
+
+// 🖨️ ROUTE BARU KEUANGAN (INFAK REGULER): Cetak laporan realisasi penggunaan dana reguler
+Route::get('/keuangan/penyaluran-reguler/cetak/{laporanId}', [PenyaluranRegulerController::class, 'cetakLaporanReguler'])->name('keuangan.penyaluran-reguler.cetak');
+
 // 🏦 ROUTE BARU KEUANGAN (OPERASIONAL INTERNAL): Memproses konfirmasi pencairan dana operasional internal yayasan
 Route::post('/keuangan/operasional/cairkan/{id}', [TransactionController::class, 'prosesCairkanOperasional'])->name('keuangan.operasional.cairkan');
 

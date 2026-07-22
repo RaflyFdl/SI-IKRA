@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PenyaluranReguler;
-use App\Models\LaporanReguler; // ✅ IMPORT MODEL LAPORAN BARU BERHASIL
+use App\Models\LaporanReguler;
 use Illuminate\Support\Facades\DB;
 
 class PenyaluranRegulerController extends Controller
@@ -25,7 +25,7 @@ class PenyaluranRegulerController extends Controller
 
         // 4. Hitung berapa dana reguler periode ini yang sudah terpakai/dicairkan keuangan
         $danaTerpakai = PenyaluranReguler::where('periode_bulan', $periodeDipilih)
-            ->whereIn('status', ['dicairkan', 'dilaporkan'])
+            ->whereIn('status', ['dicairkan', 'dilaporkan', 'reimburse_pending'])
             ->sum('nominal_diajukan') ?? 0;
 
         // 5. Sisa saldo riil yang benar-benar tersisa untuk disalurkan
@@ -47,7 +47,6 @@ class PenyaluranRegulerController extends Controller
 
         $busyDates = \App\Models\ExtraProgram::getBusyDates();
 
-        // ✅ KITA UBAH DISINI: Dari 'operasional' menjadi 'operational' sesuai nama folder sistem kamu
         return view('operational.penyaluran_reguler.index', compact(
             'semuaPengajuan',
             'periodeDipilih',
@@ -63,13 +62,12 @@ class PenyaluranRegulerController extends Controller
         $request->validate([
             'nama_program'       => 'required|string|max:255',
             'nominal_diajukan'   => 'required|numeric|min:1',
-            'rincian_detail'     => 'required|string', // JSON string dari frontend
+            'rincian_detail'     => 'required|string',
             'penerima_manfaat'   => 'required|string',
             'tanggal_pelaksanaan'=> 'required|date',
             'periode_bulan'      => 'required|string|size:7',
         ]);
 
-        // Pastikan rincian_detail adalah JSON valid; jika tidak, simpan apa adanya
         $rincianRaw = $request->rincian_detail;
         $decoded = json_decode($rincianRaw, true);
         $rincianFinal = (json_last_error() === JSON_ERROR_NONE) ? $rincianRaw : $rincianRaw;
@@ -88,8 +86,7 @@ class PenyaluranRegulerController extends Controller
     }
 
     /**
-     * 🟢 LOGIKA BARU 1: PROSES APPROVAL SISI PEMBINA
-     * Berfungsi menangani ketika Pembina klik Setujui atau Tolak
+     * PROSES APPROVAL SISI PEMBINA
      */
     public function prosesApprovalPembina(Request $request, $id)
     {
@@ -112,20 +109,17 @@ class PenyaluranRegulerController extends Controller
     }
 
     /**
-     * 🟢 LOGIKA BARU 2: PROSES PENCAIRAN SISI KEUANGAN
-     * Sinkron dengan form view dashboard keuangan dan struktur database asli
+     * PROSES PENCAIRAN SISI KEUANGAN
      */
     public function prosesCairkanKeuangan(Request $request, $id)
     {
         $request->validate([
-            // Menyesuaikan name="bukti_transfer" yang dikirim dari form blade
             'bukti_transfer' => 'required|image|mimes:jpeg,png,jpg,pdf|max:2048',
         ]);
 
         $pengajuan = PenyaluranReguler::findOrFail($id);
 
         if ($request->hasFile('bukti_transfer')) {
-            // Menggunakan penyimpanan public_path agar link 👁️ Lihat Bukti Transfer langsung tembus tanpa symlink
             $folderTujuan = public_path('uploads/bukti_transfer');
             if (!file_exists($folderTujuan)) {
                 mkdir($folderTujuan, 0777, true);
@@ -134,8 +128,6 @@ class PenyaluranRegulerController extends Controller
             $namaFile = time() . '_trf_' . $request->file('bukti_transfer')->getClientOriginalName();
             $request->file('bukti_transfer')->move($folderTujuan, $namaFile);
 
-            // Cek nama kolom yang tersedia di tabel database Anda (bukti_transfer atau bukti_transfer_path)
-            // Di sini kita update kedua kolom tersebut untuk mengantisipasi ketidakcocokan skema migrasi Anda
             $pengajuan->update([
                 'status' => 'dicairkan',
                 'bukti_transfer' => $namaFile,
@@ -151,8 +143,7 @@ class PenyaluranRegulerController extends Controller
     }
 
     /**
-     * 🚀 LOGIKA OPRASIONAL BARU 3: MENAMPILKAN FORM LAPORAN NOTA BELANJA
-     * Mengambil entitas data reguler untuk dibaca di halaman form operational
+     * MENAMPILKAN FORM LAPORAN NOTA BELANJA
      */
     public function showLaporanForm($id)
     {
@@ -161,12 +152,13 @@ class PenyaluranRegulerController extends Controller
     }
 
     /**
-     * 🚀 LOGIKA OPRASIONAL BARU 4: MENYIMPAN DATA LAPORAN & NOTA TRANSAKSI RIIL (DI-UPDATE FOR MULTI-NOTA ARRAY)
-     * Mengamankan berkas pengeluaran serta mengunci status program menjadi 'dilaporkan'
+     * MENYIMPAN DATA LAPORAN NOTA TRANSAKSI RIIL
+     * - Jika sisa dana (kelebihan): status 'dilaporkan', catat sisa yang dikembalikan
+     * - Jika kurang dana (reimburse): status 'reimburse_pending', tunggu keuangan cairkan
+     * - Jika pas: status 'dilaporkan'
      */
     public function simpanLaporan(Request $request, $id)
     {
-        // 1. Validasi data bertipe array multi-nota dari HTML5
         $request->validate([
             'nota' => 'required|array|min:1',
             'nota.*.tanggal' => 'required|date',
@@ -183,49 +175,128 @@ class PenyaluranRegulerController extends Controller
         $itemsNotaData = [];
         $totalPengeluaran = 0;
 
-        // 2. Lakukan perulangan untuk memproses berkas file fisik nota dan kalkulasi angka belanja riil
-        foreach ($request->nota as $index => $item) {
-            $nominalItem = (int)$item['nominal'];
-            $totalPengeluaran += $nominalItem;
+        DB::beginTransaction();
 
-            $pathBukti = null;
-            if (isset($item['bukti_nota'])) {
-                // Menyimpan ke folder storage/app/public/nota_reguler
-                $pathBukti = $item['bukti_nota']->store('nota_reguler', 'public');
+        try {
+            // Proses setiap nota
+            foreach ($request->nota as $index => $item) {
+                $nominalItem = (int)$item['nominal'];
+                $totalPengeluaran += $nominalItem;
+
+                $pathBukti = null;
+                if (isset($item['bukti_nota'])) {
+                    $pathBukti = $item['bukti_nota']->store('nota_reguler', 'public');
+                }
+
+                $itemsNotaData[] = [
+                    'tanggal' => $item['tanggal'],
+                    'uraian' => $item['uraian'],
+                    'nominal' => $nominalItem,
+                    'bukti_nota' => $pathBukti
+                ];
             }
 
-            $itemsNotaData[] = [
-                'tanggal' => $item['tanggal'],
-                'uraian' => $item['uraian'],
-                'nominal' => $nominalItem,
-                'bukti_nota' => $pathBukti
-            ];
+            $selisihDana = $totalDanaAwal - $totalPengeluaran;
+
+            // Proses bukti pengembalian sisa jika ada kelebihan dana
+            $pathSisaDana = null;
+            if ($selisihDana > 0) {
+                if (!$request->hasFile('bukti_pengembalian_sisa')) {
+                    return redirect()->back()
+                        ->with('error', 'Ada sisa dana sebesar Rp ' . number_format($selisihDana, 0, ',', '.') . '. Anda wajib mengunggah bukti transfer pengembalian sisa uang!')
+                        ->withInput();
+                }
+                $pathSisaDana = $request->file('bukti_pengembalian_sisa')->store('bukti_sisa_reguler', 'public');
+            }
+
+            // Simpan laporan ke tabel laporan_reguler
+            LaporanReguler::create([
+                'penyaluran_reguler_id' => $program->id,
+                'items_nota'            => $itemsNotaData,
+                'total_pengeluaran'     => $totalPengeluaran,
+                'selisih_dana'          => $selisihDana,
+                'bukti_pengembalian_sisa' => $pathSisaDana,
+                'keterangan'            => $request->keterangan
+            ]);
+
+            // Tentukan status akhir program berdasarkan selisih
+            if ($selisihDana < 0) {
+                // Kurang dana: butuh reimburse dari keuangan
+                $program->update(['status' => 'reimburse_pending']);
+                $pesanStatus = 'Laporan tersubmit! Status: Kurang Dana (Rp ' . number_format(abs($selisihDana), 0, ',', '.') . '). Menunggu konfirmasi reimburse dari bagian keuangan.';
+            } else {
+                // Pas atau kelebihan (kelebihan sudah dikembalikan via bukti transfer)
+                $program->update(['status' => 'dilaporkan']);
+                $pesanStatus = 'Laporan nota pengeluaran dana reguler berhasil disubmit dan diarsipkan!';
+            }
+
+            DB::commit();
+
+            return redirect()->route('operational.penyaluran-reguler.index')
+                ->with('sukses', $pesanStatus);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Gagal menyimpan laporan: ' . $e->getMessage())
+                ->withInput();
         }
+    }
 
-        $selisihDana = $totalDanaAwal - $totalPengeluaran;
-
-        // 3. Proses simpan berkas bukti transfer sisa kas apabila dana bernilai sisa (Kelebihan Dana)
-        $pathSisaDana = null;
-        if ($selisihDana > 0 && $request->hasFile('bukti_pengembalian_sisa')) {
-            $pathSisaDana = $request->file('bukti_pengembalian_sisa')->store('bukti_sisa_reguler', 'public');
-        }
-
-        // 4. Catat arsip pengeluaran dana riil lapangan ke tabel laporan_reguler dalam struktur JSON
-        LaporanReguler::create([
-            'penyaluran_reguler_id' => $program->id,
-            'items_nota' => $itemsNotaData, // Masuk dalam bentuk array, otomatis dikonversi jadi JSON di database oleh Eloquent Casting
-            'total_pengeluaran' => $totalPengeluaran,
-            'selisih_dana' => $selisihDana,
-            'bukti_pengembalian_sisa' => $pathSisaDana,
-            'keterangan' => $request->keterangan
+    /**
+     * KEUANGAN: Memproses Reimburse Dana Reguler (Kurang Dana)
+     * Dana reimburse diambil dari saldo siap salur reguler bulan yang bersangkutan.
+     */
+    public function prosesRegulerReimburse(Request $request, $id)
+    {
+        $request->validate([
+            'bukti_transfer_reimburse' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 5. Kunci status program kerja reguler menjadi 'dilaporkan' agar alur selesai sempurna
-        $program->update([
-            'status' => 'dilaporkan'
-        ]);
+        $program = PenyaluranReguler::with('laporan')->findOrFail($id);
 
-        return redirect()->route('operational.penyaluran-reguler.index')
-            ->with('sukses', 'Laporan nota pengeluaran dana reguler berhasil disubmit dan diarsipkan ke database!');
+        if ($program->status !== 'reimburse_pending') {
+            return redirect()->back()->with('error', 'Program ini tidak sedang dalam status menunggu reimburse.');
+        }
+
+        if (!$program->laporan) {
+            return redirect()->back()->with('error', 'Laporan realisasi tidak ditemukan.');
+        }
+
+        $nominalTekor = abs($program->laporan->selisih_dana);
+
+        DB::beginTransaction();
+        try {
+            $pathBukti = $request->file('bukti_transfer_reimburse')->store('bukti_reimburse_reguler', 'public');
+
+            // Simpan bukti reimburse di laporan
+            $program->laporan->update([
+                'bukti_reimburse' => $pathBukti,
+            ]);
+
+            // Update status program menjadi dilaporkan (selesai)
+            $program->update([
+                'status' => 'dilaporkan',
+            ]);
+
+            DB::commit();
+            return redirect()->route('keuangan.dashboard')
+                ->with('success', '✅ Reimburse dana reguler sebesar Rp ' . number_format($nominalTekor, 0, ',', '.') . ' berhasil dikonfirmasi!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal memproses reimburse: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * KEUANGAN: Menampilkan halaman cetak laporan realisasi reguler
+     */
+    public function cetakLaporanReguler($laporanId)
+    {
+        $laporan = LaporanReguler::with('penyaluranReguler')->findOrFail($laporanId);
+        $program = $laporan->penyaluranReguler;
+
+        return view('keuangan.cetak_laporan_reguler', compact('laporan', 'program'));
     }
 }

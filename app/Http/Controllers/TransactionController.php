@@ -7,7 +7,8 @@ use App\Models\ExtraProgram;
 use App\Models\Transaction; 
 use App\Models\DanaBackup; 
 use App\Models\PengajuanPencairanEkstra;
-use App\Models\PenyaluranReguler; // Tambahkan import Model PenyaluranReguler
+use App\Models\PenyaluranReguler;
+use App\Models\LaporanReguler;
 use App\Models\OperationalRequest; // ✅ IMPORT MODEL OPERASIONAL BARU
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -190,6 +191,18 @@ class TransactionController extends Controller
                                             ->orderBy('updated_at', 'desc')
                                             ->get();
 
+        // Laporan realisasi yang sudah disubmit oleh operasional (dilaporkan + reimburse_pending)
+        $riwayatLaporanReguler = LaporanReguler::with('penyaluranReguler')
+                                    ->whereHas('penyaluranReguler')
+                                    ->orderBy('created_at', 'desc')
+                                    ->get();
+
+        // Program reguler yang menunggu reimburse dari keuangan
+        $antreanRegulerReimburse = PenyaluranReguler::with('laporan')
+                                    ->where('status', 'reimburse_pending')
+                                    ->orderBy('updated_at', 'desc')
+                                    ->get();
+
         return view('keuangan_dashboard', compact(
             'totalKeseluruhan', 
             'totalEkstra', 
@@ -206,7 +219,9 @@ class TransactionController extends Controller
             'totalDanaBackup',
             'operasionalPerPeriode',
             'siapSalurPerPeriode',
-            'pengajuanReguler'
+            'pengajuanReguler',
+            'riwayatLaporanReguler',
+            'antreanRegulerReimburse'
         ));
     }
 

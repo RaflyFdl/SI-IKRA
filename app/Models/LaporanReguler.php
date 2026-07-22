@@ -19,6 +19,7 @@ class LaporanReguler extends Model
         'total_pengeluaran',
         'selisih_dana',
         'bukti_pengembalian_sisa',
+        'bukti_reimburse',
         'keterangan'
     ];
 
